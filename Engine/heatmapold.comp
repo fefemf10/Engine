@@ -1,0 +1,152 @@
+#version 460 core
+#extension GL_ARB_compute_shader:           enable
+#extension GL_ARB_shader_storage_buffer_object:     enable
+#extension GL_ARB_compute_variable_group_size : enable
+#define MAX_LIGHT_COUNT 1024
+#define SCREEN_WIDTH 1280
+#define SCREEN_HEIGHT 720
+#define WORK_GROUP_SIZE 16
+#define THREAD_COUNT (WORK_GROUP_SIZE * WORK_GROUP_SIZE)
+#define NUM_GROUPS_X (SCREEN_WIDTH / WORK_GROUP_SIZE)
+#define NUM_GROUPS_Y (SCREEN_HEIGHT / WORK_GROUP_SIZE)
+
+layout(std140, binding = 0) uniform BufferTransform
+{
+	mat4 projection;
+	mat4 view;
+};
+
+struct Light {
+    vec3 position;
+	float radius;
+    vec3 diffuse;
+	float linear;
+	float quadratic;
+};
+
+layout(std430, binding = 1) buffer BufferLight
+{
+	int countLight;
+	Light lights[];
+};
+
+layout(std430, binding = 2) buffer BufferLightVisible
+{ 
+     int lightVisible[];
+};
+
+layout(r32f, binding = 4) uniform image2D img_output;
+
+layout (binding = 0) uniform sampler2D gDepth; 
+
+shared uint minDepthInt;
+shared uint maxDepthInt;
+shared uint visibleLightCount;
+shared vec4 frustumPlanes[6];
+shared int visibleLightIndices[MAX_LIGHT_COUNT];
+shared mat4 viewProjection;
+const vec2 screenSize = vec2(SCREEN_WIDTH, SCREEN_HEIGHT);
+
+layout( local_size_variable ) in;
+
+vec4 UPSSVS(vec4 screenPoint)
+{
+	vec4 clip = vec4(vec2(screenPoint.x, screenPoint.y) * 2.0 - 1.0, screenPoint.z, screenPoint.w);
+	vec4 view = inverse(projection) * clip;
+	return view / view.w;
+}
+
+void main()
+{
+	const ivec2 location = ivec2(gl_GlobalInvocationID.xy);
+	const ivec2 tileID = ivec2(gl_WorkGroupID.xy);
+	const ivec2 tileNumber = ivec2(gl_NumWorkGroups.xy);
+	const uint index = tileID.y * tileNumber.x + tileID.x;
+	const vec2 UV = vec2(location) / screenSize;
+	float depth = texture(gDepth, UV).r;
+	if(gl_LocalInvocationIndex == 0)
+	{
+		minDepthInt = 0xFFFFFFFF;
+		maxDepthInt = 0;
+		visibleLightCount = 0;
+		viewProjection = projection * view;
+	}
+	
+	barrier();
+	
+	
+	
+	depth = (0.5 * projection[3][2]) / (depth + 0.5 * projection[2][2] - 0.5);
+	//depth = screenToView(vec4(location.x, location.y, depth, 1.0)).z;
+ 
+	uint depthuInt = floatBitsToUint(depth);
+	atomicMin(minDepthInt, depthuInt);
+	atomicMax(maxDepthInt, depthuInt);
+
+	barrier();
+
+	if (gl_LocalInvocationIndex == 0) {
+		float minDepth = uintBitsToFloat(minDepthInt);
+		float maxDepth = uintBitsToFloat(maxDepthInt);
+		
+		const vec2 negativeStep = (2.0 * vec2(tileID)) / vec2(tileNumber);
+		const vec2 positiveStep = (2.0 * vec2(tileID + ivec2(1, 1))) / vec2(tileNumber);
+
+		frustumPlanes[0] = vec4(1.0, 0.0, 0.0, 1.0 - negativeStep.x); // Left
+		frustumPlanes[1] = vec4(-1.0, 0.0, 0.0, -1.0 + positiveStep.x); // Right
+		frustumPlanes[2] = vec4(0.0, 1.0, 0.0, 1.0 - negativeStep.y); // Bottom
+		frustumPlanes[3] = vec4(0.0, -1.0, 0.0, -1.0 + positiveStep.y); // Top
+		frustumPlanes[4] = vec4(0.0, 0.0, -1.0, -minDepth); // Near
+		frustumPlanes[5] = vec4(0.0, 0.0, 1.0, maxDepth); // Far
+
+		for (uint i = 0; i < 4; i++) {
+			frustumPlanes[i] *= viewProjection;
+			frustumPlanes[i] /= length(frustumPlanes[i].xyz);
+		}
+
+		frustumPlanes[4] *= view;
+		frustumPlanes[4] /= length(frustumPlanes[4].xyz);
+		frustumPlanes[5] *= view;
+		frustumPlanes[5] /= length(frustumPlanes[5].xyz);
+	}
+	
+	barrier();
+	const uint passCount = (countLight + THREAD_COUNT - 1) / THREAD_COUNT;
+	for (uint i = 0; i < passCount; ++i)
+	{
+		const uint lightIndex = i * THREAD_COUNT + gl_LocalInvocationIndex;
+		if (lightIndex >= countLight)
+			break;
+
+		const vec4 position = vec4(lights[lightIndex].position, 1.0);
+
+		float distance = 0.0;
+		for (uint j = 0; j < 6; j++) {
+			distance = dot(position, frustumPlanes[j]) + lights[lightIndex].radius;
+			if (distance <= 0.0)
+			{
+				break;
+			}
+		}
+		if (distance > 0.0) {
+			uint offset = atomicAdd(visibleLightCount, 1);
+			visibleLightIndices[offset] = int(lightIndex);
+		}
+	}
+
+	barrier();
+	
+	if (gl_LocalInvocationIndex == 0)
+	{
+		uint offset = index * MAX_LIGHT_COUNT;
+		for (uint i = 0; i < visibleLightCount; i++)
+			lightVisible[offset + i] = visibleLightIndices[i];
+
+		if (visibleLightCount != MAX_LIGHT_COUNT)
+			lightVisible[offset + visibleLightCount] = -1;
+	}
+	vec4 pixel = vec4(visibleLightCount / float(10));
+ 
+	ivec2 pixel_coords = ivec2(gl_WorkGroupID.xy);
+	imageStore(img_output, pixel_coords, pixel);
+}
