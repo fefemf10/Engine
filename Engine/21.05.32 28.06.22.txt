@@ -1,2 +1,0 @@
-[21.05.32 28.06.22] API, ERROR, HIGH, 1282: Error has been generated. GL error GL_INVALID_OPERATION in (null): (ID: 173538523) Generic error
-[21.05.32 28.06.22] API, ERROR, HIGH, 1282: Error has been generated. GL error GL_INVALID_OPERATION in (null): (ID: 173538523) Generic error
