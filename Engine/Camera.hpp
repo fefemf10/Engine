@@ -10,7 +10,7 @@
 class Camera
 {
 public:
-	Camera(Player& player);
+	Camera();
 	void update(const float& dt);
 	const glm::vec3& getUp() const;
 	glm::mat4 getView() const;
@@ -18,11 +18,15 @@ public:
 	const glm::vec3& getLook() const;
 	Frustum& getFrustum();
 private:
+	glm::vec3 position;
 	glm::vec3 up;
 	glm::vec3 right;
 	glm::vec3 look;
 	const glm::mat4 projection;
-	Player& player;
 	Frustum frustum;
+	float pitch, yaw;
+	float speed;
+	bool changeSpeed = false;
+	bool fly = true;
 };
 

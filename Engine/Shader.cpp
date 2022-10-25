@@ -2,33 +2,33 @@
 
 Shader::Shader() : program{}, vs{}, fs{}, cs{}
 {
+	program = glCreateProgram();
+	++GL::shaders[program];
 }
 
-Shader::Shader(Shader& other)
+Shader::Shader(const Shader& other)
 {
-	this->program = other.program;
-	this->vs = other.vs;
-	this->fs = other.fs;
-	this->cs = other.cs;
-	this->locations = other.locations;
-	other.program = other.vs = other.fs = other.cs = 0;
-	other.locations.clear();
+	program = other.program;
+	vs = other.vs;
+	fs = other.fs;
+	cs = other.cs;
+	++GL::shaders[program];
 }
 
-Shader::Shader(Shader&& other)
+Shader& Shader::operator=(const Shader& other)
 {
-	this->program = other.program;
-	this->vs = other.vs;
-	this->fs = other.fs;
-	this->cs = other.cs;
-	this->locations = other.locations;
-	other.program = other.vs = other.fs = other.cs = 0;
-	other.locations.clear();
+	program = other.program;
+	vs = other.vs;
+	fs = other.fs;
+	cs = other.cs;
+	++GL::shaders[program];
+	return *this;
 }
 
-Shader::Shader(const std::vector<std::string>& shaderFilePaths) : program{}, vs{}, fs{}, cs{}
+Shader::Shader(const std::initializer_list<std::string> shaderFilePaths) : program{}, vs{}, fs{}, cs{}
 {
 	program = glCreateProgram();
+	++GL::shaders[program];
 	for (const auto& shader : shaderFilePaths)
 	{
 		if (shader.rfind("vert") != std::string::npos)
@@ -38,11 +38,26 @@ Shader::Shader(const std::vector<std::string>& shaderFilePaths) : program{}, vs{
 		else if (shader.rfind("comp") != std::string::npos)
 			cs = compileShader(GL_COMPUTE_SHADER, Shader::getStringShader(shader));
 	}
+	link();
+}
+
+void Shader::loadFromFile(const std::initializer_list<std::string> shaderFilePaths)
+{
+	for (const auto& shader : shaderFilePaths)
+	{
+		if (shader.rfind("vert") != std::string::npos)
+			vs = compileShader(GL_VERTEX_SHADER, Shader::getStringShader(shader));
+		else if (shader.rfind("frag") != std::string::npos)
+			fs = compileShader(GL_FRAGMENT_SHADER, Shader::getStringShader(shader));
+		else if (shader.rfind("comp") != std::string::npos)
+			cs = compileShader(GL_COMPUTE_SHADER, Shader::getStringShader(shader));
+	}
+	link();
 }
 
 Shader::~Shader()
 {
-	if (program)
+	if (GL::shaders[program] == 0)
 	{
 		if (vs)
 		{
@@ -70,29 +85,25 @@ void Shader::bindAttrib(GLuint index, const std::string& name)
 
 void Shader::link()
 {
-	if (program)
+	if (vs)
 	{
-		if (vs)
-		{
-			glAttachShader(program, vs);
-		}
-		if (fs)
-		{
-			glAttachShader(program, fs);
-		}
-		if (cs)
-		{
-			glAttachShader(program, cs);
-		}
-		glLinkProgram(program);
-		glValidateProgram(program);
+		glAttachShader(program, vs);
 	}
+	if (fs)
+	{
+		glAttachShader(program, fs);
+	}
+	if (cs)
+	{
+		glAttachShader(program, cs);
+	}
+	glLinkProgram(program);
+	glValidateProgram(program);
 }
 
 void Shader::use()
 {
-	if (program)
-		glUseProgram(program);
+	glUseProgram(program);
 }
 
 void Shader::setFloat(const std::string& name, const float& value)

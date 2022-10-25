@@ -1,6 +1,5 @@
 #pragma once
 #include <vector>
-#include <GLEW/glew.h>
 class UBO
 {
 public:

@@ -16,6 +16,12 @@
     <Filter Include="IMGUI">
       <UniqueIdentifier>{4076d32e-6a4c-4c00-9905-401dc159cc37}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Исходные файлы\Objects">
+      <UniqueIdentifier>{317bb64e-4ccc-46fc-8b3c-85a706db0468}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы заголовков\Objects">
+      <UniqueIdentifier>{8054e9e6-9a83-4177-aa8a-f74604fffbc0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -69,19 +75,10 @@
     <ClCompile Include="..\IMGUI\imgui_impl_glfw.cpp">
       <Filter>IMGUI</Filter>
     </ClCompile>
-    <ClCompile Include="..\IMGUI\imgui_impl_opengl3.cpp">
-      <Filter>IMGUI</Filter>
-    </ClCompile>
     <ClCompile Include="..\IMGUI\imgui_widgets.cpp">
       <Filter>IMGUI</Filter>
     </ClCompile>
-    <ClCompile Include="Logger.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
     <ClCompile Include="ThreadPool.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
-    <ClCompile Include="Noise.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="Framebuffer.cpp">
@@ -100,6 +97,39 @@
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="Transformable.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="Log.ixx">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="Node.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="Mesh.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="Model.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="tiny_obj_loader.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="VBO.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="Sampler.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="Material.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="..\IMGUI\imgui_tables.cpp">
+      <Filter>IMGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\IMGUI\imgui_impl_vulkan.cpp">
+      <Filter>IMGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="color.ixx">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
   </ItemGroup>
@@ -146,9 +176,6 @@
     <ClInclude Include="..\IMGUI\imgui_impl_glfw.h">
       <Filter>IMGUI</Filter>
     </ClInclude>
-    <ClInclude Include="..\IMGUI\imgui_impl_opengl3.h">
-      <Filter>IMGUI</Filter>
-    </ClInclude>
     <ClInclude Include="..\IMGUI\imgui_internal.h">
       <Filter>IMGUI</Filter>
     </ClInclude>
@@ -164,16 +191,10 @@
     <ClInclude Include="RM.hpp">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="Logger.hpp">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
     <ClInclude Include="Хранилище ядерных отходов.hpp">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="ThreadPool.hpp">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
-    <ClInclude Include="Noise.hpp">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="Framebuffer.hpp">
@@ -193,6 +214,30 @@
     </ClInclude>
     <ClInclude Include="Transformable.hpp">
       <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="Node.hpp">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh.hpp">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="Model.hpp">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="tiny_obj_loader.hpp">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="VBO.hpp">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="Sampler.hpp">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="Material.hpp">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="..\IMGUI\imgui_impl_vulkan.h">
+      <Filter>IMGUI</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

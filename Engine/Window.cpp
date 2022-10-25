@@ -1,11 +1,12 @@
 #include "Window.hpp"
 
+import Log;
+
 Window::Window(const std::string& title)
 {
 	glfwInit();
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 	GL::loadSettings();
 	if (GL::settings.fullscreen)
 	{
@@ -16,30 +17,21 @@ Window::Window(const std::string& title)
 	{
 		window = glfwCreateWindow(GL::settings.width, GL::settings.height, title.c_str(), nullptr, nullptr);
 	}
-	if (!window)
-	{
-		std::cout << "Window don't created" << std::endl;
-	}
-
+	vulkanLayers.push_back("VK_LAYER_KHRONOS_validation");
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-	glfwMakeContextCurrent(window);
-	glfwSwapInterval(GL::settings.vsync);
-	glewExperimental = true;
-	if (glewInit() != GLEW_OK)
-	{
-		std::cout << "glew dont Init" << std::endl;
-	}
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);
+	uint32_t glfwExtensionCount = 0;
+	const char** glfwExtensions;
+	glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+	for (size_t i = 0; i < glfwExtensionCount; i++)
+		instanceExtensions.emplace_back(glfwExtensions[i]);
+	instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+	deviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+	
+	initVulkan();
 
-	//glEnable(GL_BLEND);
-	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	glEnable(GL_CULL_FACE);
-	ImGui::CreateContext();
-	ImGui_ImplGlfw_InitForOpenGL(window, true);
-	ImGui_ImplOpenGL3_Init("#version 430 core");
-	ImFont* font = ImGui::GetIO().Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\comicbd.ttf", 18, NULL, ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
+	//ImGui::CreateContext();
+	//ImGui_ImplGlfw_InitForVulkan(window, true);
+	//ImGui_ImplVulkan_Init("#version 430 core");
 }
 
 Window::~Window()
@@ -49,406 +41,389 @@ Window::~Window()
 
 void Window::loop()
 {
-	glEnable(GL_DEBUG_OUTPUT);
-	glDebugMessageCallback(Window::message_callback, nullptr);
-	
-	VAO crosshair;
-	crosshair.bind();
-	crosshair.addVBO(1);
-	crosshair.setTypeIndices(GL_UNSIGNED_BYTE);
-	crosshair.loadData(0, std::vector<glm::vec2>{ {-0.01f, -0.01f }, { 0.01f, 0.01f }, { -0.01f, 0.01f }, { 0.01f, -0.01f } });
-	crosshair.loadIndices(std::vector<uint8_t>{ 0, 1, 2, 3 });
-
-	VAO fboBuffer;
-	fboBuffer.bind();
-	fboBuffer.addVBO(2);
-	fboBuffer.setTypeIndices(GL_UNSIGNED_BYTE);
-	fboBuffer.loadData(0, std::vector<glm::vec2>{ glm::vec2(-1.f, 1.f), glm::vec2(-1.f, -1.f), glm::vec2(1.f, -1.f), glm::vec2(1.f, 1.f) });
-	fboBuffer.loadData(1, std::vector<glm::vec2>{ glm::vec2(0.f, 1.f), glm::vec2(0.f, 0.f), glm::vec2(1.f, 0.f), glm::vec2(1.f, 1.f) });
-	fboBuffer.loadIndices(std::vector<uint8_t>{ 0, 1, 2, 2, 3, 0 });
-
-	VAO fboBuffer1;
-	fboBuffer1.bind();
-	fboBuffer1.addVBO(2);
-	fboBuffer1.setTypeIndices(GL_UNSIGNED_BYTE);
-	fboBuffer1.loadData(0, std::vector<glm::vec2>{ glm::vec2(-1.f, 1.f), glm::vec2(-1.f, 0.f), glm::vec2(0.f, 0.f), glm::vec2(0.f, 1.f) });
-	fboBuffer1.loadData(1, std::vector<glm::vec2>{ glm::vec2(0.f, 1.f), glm::vec2(0.f, 0.f), glm::vec2(1.f, 0.f), glm::vec2(1.f, 1.f) });
-	fboBuffer1.loadIndices(std::vector<uint8_t>{ 0, 1, 2, 2, 3, 0 });
-	VAO fboBuffer2;
-	fboBuffer2.bind();
-	fboBuffer2.addVBO(2);
-	fboBuffer2.setTypeIndices(GL_UNSIGNED_BYTE);
-	fboBuffer2.loadData(0, std::vector<glm::vec2>{ glm::vec2(-1.f, 0.f), glm::vec2(-1.f, -1.f), glm::vec2(0.f, -1.f), glm::vec2(0.f, 0.f) });
-	fboBuffer2.loadData(1, std::vector<glm::vec2>{ glm::vec2(0.f, 1.f), glm::vec2(0.f, 0.f), glm::vec2(1.f, 0.f), glm::vec2(1.f, 1.f) });
-	fboBuffer2.loadIndices(std::vector<uint8_t>{ 0, 1, 2, 2, 3, 0 });
-	VAO fboBuffer3;
-	fboBuffer3.bind();
-	fboBuffer3.addVBO(2);
-	fboBuffer3.setTypeIndices(GL_UNSIGNED_BYTE);
-	fboBuffer3.loadData(0, std::vector<glm::vec2>{ glm::vec2(0.f, 0.f), glm::vec2(0.f, -1.f), glm::vec2(1.f, -1.f), glm::vec2(1.f, 0.f) });
-	fboBuffer3.loadData(1, std::vector<glm::vec2>{ glm::vec2(0.f, 1.f), glm::vec2(0.f, 0.f), glm::vec2(1.f, 0.f), glm::vec2(1.f, 1.f) });
-	fboBuffer3.loadIndices(std::vector<uint8_t>{ 0, 1, 2, 2, 3, 0 });
-	VAO fboBuffer4;
-	fboBuffer4.bind();
-	fboBuffer4.addVBO(2);
-	fboBuffer4.setTypeIndices(GL_UNSIGNED_BYTE);
-	fboBuffer4.loadData(0, std::vector<glm::vec2>{ glm::vec2(0.f, 1.f), glm::vec2(0.f, 0.f), glm::vec2(1.f, 0.f), glm::vec2(1.f, 1.f) });
-	fboBuffer4.loadData(1, std::vector<glm::vec2>{ glm::vec2(0.f, 1.f), glm::vec2(0.f, 0.f), glm::vec2(1.f, 0.f), glm::vec2(1.f, 1.f) });
-	fboBuffer4.loadIndices(std::vector<uint8_t>{ 0, 1, 2, 2, 3, 0 });
-
-	Player player;
-	Camera camera(player);
-	World world("1", player, camera);
-	const int cLights = 512;
-	struct light
-	{
-		glm::vec3 position;
-		float radius;
-		glm::vec3 diffuse;
-		float linear;
-		float quadratic;
-		float pad[3]{};
-	};
-	std::vector<light> lights(cLights);
-	std::vector<GLint> vecLightVisibility(cLights);
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::uniform_real_distribution<float> distColor1(0.0, 0.01);
-	std::uniform_real_distribution<float> distColor2(0.2, 1.0);
-	std::uniform_real_distribution<float> distLight1(0.22, 0.35);
-	std::uniform_real_distribution<float> distLight2(0.02, 0.44);
-	std::uniform_real_distribution<float> distHeight(50, 60);
-	for (size_t i = 0; i < cLights; ++i)
-	{
-		lights[i].position = glm::vec3(player.getPosition().x, distHeight(gen), player.getPosition().z);
-		//lights[i].ambient = glm::vec3(distColor1(gen), distColor1(gen), distColor1(gen));
-		lights[i].diffuse = glm::vec3(distColor2(gen), distColor2(gen), distColor2(gen));
-		lights[i].linear = distLight1(gen);
-		lights[i].quadratic = distLight2(gen);
-		float lightMax = std::fmaxf(std::fmaxf(lights[i].diffuse.r, lights[i].diffuse.g), lights[i].diffuse.b);
-		lights[i].radius = (-lights[i].linear + std::sqrtf(lights[i].linear * lights[i].linear - 4 * lights[i].quadratic * (1.0f - (256.f / 5.f) * lightMax))) / (2.f * lights[i].quadratic);
-	}
-	bool menu = true;
-	bool polygon = true;
-	bool vsync = true;
-	bool ssaoRender = false;
-	bool cameraUpdate = true;
-	bool heatmapoldbool = false;
-	int buffer = 0;
-	int kernelSizeSSAO = 64;
-	float radiusSSAO = 0.5f;
-	float biasSSAO = 0.05f;
-	float powerSSAO = 1.f;
-	Framebuffer gbufferFBO, ssaoFBO, ssaoBlurFBO;
-	const int maxLightCountPerTile = 1024;
-	const int workGroups = 16;
-	const int numGroupsX = GL::settings.width / workGroups;
-	const int numGroupsY = GL::settings.height / workGroups;
-	SSBO bufferLight(16 + sizeof(light) * cLights, 1), lightVisibility(4 * maxLightCountPerTile * numGroupsX * numGroupsY, 2);
-	UBO bufferTransform(sizeof(glm::mat4) * 2, 0);
-	Texture heatmapTex(1, { numGroupsX, numGroupsY, 0 }, GL_R32F);
-	glBindImageTexture(4, heatmapTex.getID(), 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);
-	bufferLight.bind();
-	bufferLight.loadData(0, std::vector<int>{ cLights });
-	bufferLight.loadData(16, lights);
-	bufferLight.unbind();
-	lightVisibility.bind();
-	lightVisibility.loadData(0, std::vector<int>(maxLightCountPerTile* numGroupsX * numGroupsY, 0));
-	lightVisibility.unbind();
-	bufferTransform.bind();
-	bufferTransform.loadData(0, camera.getProjection());
-	bufferTransform.unbind();
-	{
-		gbufferFBO.bind();
-		gbufferFBO.attachTexture(GL_COLOR_ATTACHMENT0, GL_RGB16F, GL::settings.width, GL::settings.height);
-		gbufferFBO.attachTexture(GL_COLOR_ATTACHMENT1, GL_RGB8, GL::settings.width, GL::settings.height);
-		gbufferFBO.attachTexture(GL_COLOR_ATTACHMENT2, GL_RGB8, GL::settings.width, GL::settings.height);
-		gbufferFBO.attachDepth(GL::settings.width, GL::settings.height);
-		gbufferFBO.useBuffer();
-		assert(gbufferFBO.checkStatus() == GL_FRAMEBUFFER_COMPLETE && "not complite");
-	}
-	{
-		ssaoFBO.bind();
-		ssaoFBO.attachTexture(GL_COLOR_ATTACHMENT0, GL_R8, GL::settings.width, GL::settings.height);
-		ssaoFBO.useBuffer();
-		assert(ssaoFBO.checkStatus() == GL_FRAMEBUFFER_COMPLETE && "not complite");
-	}
-	{
-		ssaoBlurFBO.bind();
-		ssaoBlurFBO.attachTexture(GL_COLOR_ATTACHMENT0, GL_R8, GL::settings.width, GL::settings.height);
-		ssaoBlurFBO.useBuffer();
-		assert(ssaoBlurFBO.checkStatus() == GL_FRAMEBUFFER_COMPLETE && "not complite");
-	}
-	std::uniform_real_distribution<float> distNoise(-1.0, 1.0);
-	{
-		GL::useShader(RM::getIDShader("ssao"));
-		for (size_t i = 0; i < 64; ++i)
-		{
-			glm::vec3 sample(distNoise(gen), distNoise(gen), (distNoise(gen) + 1.f) / 2.f);
-			sample = glm::normalize(sample);
-			sample *= (distNoise(gen) + 1.f) / 2.f;
-			float scale = i / 64.0;
-			sample *= std::lerp(0.1f, 1.f, scale * scale);
-			RM::getShader("ssao").setVec3("samples[" + std::to_string(i) + "]", sample);
-		}
-		RM::getShader("ssao").setVec2("noiseScale", { GL::settings.width / 4.f, GL::settings.height / 4.f });
-	}
-	Texture noise(1, { 4, 4, 0 }, GL_RGB32F);
-	std::vector<glm::vec3> ssaoNoise;
-	for (size_t i = 0; i < 16; ++i)
-	{
-		ssaoNoise.push_back({ distNoise(gen), distNoise(gen), 0.f });
-	}
-	noise.editTexture({ 0, 0, 0 }, { 4, 4 }, GL_RGB, GL_FLOAT, reinterpret_cast<const char*>(ssaoNoise.data()));
 	while (!glfwWindowShouldClose(window))
 	{
 		glfwPollEvents();
-
-		ImGui_ImplOpenGL3_NewFrame();
-		ImGui_ImplGlfw_NewFrame();
-		ImGui::NewFrame();
-		/*{
-			ImGui::ShowDemoWindow();
-			ImGui::Begin("Hotbar###MainHotbar", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoNavFocus);
-			ImGui::SetWindowPos("Hotbar###MainHotbar", { 0.25f * width, 0.9f * height });
-			ImGui::SetWindowSize("Hotbar###MainHotbar", { 0.5f * width, 0.1f * height });
-			ImGui::End();
-		}*/
-		if (menu)
-		{
-			ImGui::Begin("Debug###Debug", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoNavFocus);
-			ImGui::SetWindowPos("Debug###Debug", {});
-			ImGui::Text("Look player x = %.2f y = %.2f z = %.2f", player.getLook().x, player.getLook().y, player.getLook().z);
-			ImGui::Text("Position player x = %.2f y = %.2f z = %.2f", player.getPosition().x, player.getPosition().y, player.getPosition().z);
-			ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-			ImGui::Checkbox("SSAO", &ssaoRender);
-			ImGui::Checkbox("Heatmap Old", &heatmapoldbool);
-			if (ImGui::SliderFloat("Radius SSAO", &radiusSSAO, 0.f, 10.f))
-			{
-				GL::useShader(RM::getIDShader("ssao"));
-				RM::getShader("ssao").setFloat("radius", radiusSSAO);
-			}
-			if (ImGui::SliderFloat("Bias SSAO", &biasSSAO, -1.f, 1.f))
-			{
-				GL::useShader(RM::getIDShader("ssao"));
-				RM::getShader("ssao").setFloat("bias", biasSSAO);
-			}
-			if (ImGui::SliderFloat("Power SSAO", &powerSSAO, 0.f, 10.f))
-			{
-				GL::useShader(RM::getIDShader("ssao"));
-				RM::getShader("ssao").setFloat("power", powerSSAO);
-			}
-			if (ImGui::SliderInt("kernelSize", &kernelSizeSSAO, 1.f, 192.f))
-			{
-				GL::useShader(RM::getIDShader("ssao"));
-				RM::getShader("ssao").setInt("kernelSize", kernelSizeSSAO);
-				for (size_t i = 0; i < kernelSizeSSAO; ++i)
-				{
-					glm::vec3 sample(distNoise(gen), distNoise(gen), (distNoise(gen) + 1.f) / 2.f);
-					sample = glm::normalize(sample);
-					sample *= (distNoise(gen) + 1.f) / 2.f;
-					float scale = float(i) / kernelSizeSSAO;
-					sample *= std::lerp(0.1f, 1.f, scale * scale);
-					RM::getShader("ssao").setVec3("samples[" + std::to_string(i) + "]", sample);
-				}
-			}
-			ImGui::End();
-		}
-
-		if (ImGui::IsKeyReleased(GLFW_KEY_ESCAPE))
-			glfwSetWindowShouldClose(window, true);
-		if (ImGui::IsKeyReleased(GLFW_KEY_F3))
-			menu ^= 1;
-		if (ImGui::IsKeyReleased(GLFW_KEY_1))
-		{
-			polygon ^= 1;
-			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE + polygon);
-		}
-
-		if (ImGui::IsKeyReleased(GLFW_KEY_2))
-		{
-			vsync ^= 1;
-			glfwSwapInterval(vsync);
-		}
-		if (ImGui::IsKeyReleased(GLFW_KEY_4))
-		{
-			++buffer;
-			buffer %= 5;
-		}
-		if (ImGui::IsKeyReleased(GLFW_KEY_5))
-		{
-			cameraUpdate ^= 1;
-			if (cameraUpdate)
-				glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-			else
-				glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-		}
-		float dt = ImGui::GetIO().DeltaTime;
-		player.update(dt);
-		if (cameraUpdate)
-			camera.update(dt);
-		world.update(dt);
-
-		{
-			gbufferFBO.bind();
-			glEnable(GL_DEPTH_TEST);
-			//glClearColor(0.0, 0.749, 1.0, 1.0);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			GL::useShader(RM::getIDShader("gbuffer"));
-			GL::useTexture(RM::getIDTexture("blocks"));
-			bufferTransform.bind();
-			world.draw();
-			bufferTransform.unbind();
-			gbufferFBO.unbind();
-		}
-		{
-			GL::useShader(heatmapoldbool ? RM::getIDShader("heatmapold") : RM::getIDShader("heatmap"));
-			GL::useTexture(gbufferFBO.getDepthTexture(), 0);
-			bufferTransform.bind();
-			bufferLight.bind();
-			lightVisibility.bind();
-			bufferTransform.loadData(sizeof(glm::mat4), camera.getView());
-			glDispatchComputeGroupSizeARB(numGroupsX, numGroupsY, 1, workGroups, workGroups, 1);
-			glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-			bufferTransform.unbind();
-			bufferLight.unbind();
-			lightVisibility.unbind();
-		}
-		if (ssaoRender)
-		{
-			{
-				ssaoFBO.bind();
-				GL::useShader(RM::getIDShader("ssao"));
-				glClear(GL_COLOR_BUFFER_BIT);
-				bufferTransform.bind();
-				GL::useTexture(gbufferFBO.getTexture(0), 0);
-				GL::useTexture(gbufferFBO.getTexture(1), 1);
-				GL::useTexture(noise.getID(), 2);
-				fboBuffer.draw();
-				bufferTransform.unbind();
-				ssaoFBO.unbind();
-			}
-			{
-				ssaoBlurFBO.bind();
-				GL::useShader(RM::getIDShader("ssaoBlur"));
-				glClear(GL_COLOR_BUFFER_BIT);
-				GL::useTexture(ssaoFBO.getTexture(0), 0);
-				fboBuffer.draw();
-				ssaoBlurFBO.unbind();
-			}
-		}
-		lightVisibility.bind();
-		bufferLight.bind();
-		if (buffer == 0)
-		{
-			if (ssaoRender)
-			{
-				GL::useShader(RM::getIDShader("lightSSAO"));
-				GL::useTexture(ssaoBlurFBO.getTexture(0), 3);
-			}
-			else
-				GL::useShader(RM::getIDShader("light"));
-			GL::useTexture(gbufferFBO.getTexture(0), 0);
-			GL::useTexture(gbufferFBO.getTexture(1), 1);
-			GL::useTexture(gbufferFBO.getTexture(2), 2);
-			fboBuffer1.draw();
-
-			GL::useShader(RM::getIDShader("fbo_debug"));
-			GL::useTexture(gbufferFBO.getTexture(1), 0);
-			fboBuffer2.draw();
-			GL::useTexture(heatmapTex.getID(), 0);
-			fboBuffer3.draw();
-			if (ssaoRender)
-			{
-				GL::useTexture(ssaoBlurFBO.getTexture(0), 0);
-				fboBuffer4.draw();
-			}
-		}
-		else if (buffer == 1)
-		{
-			if (ssaoRender)
-			{
-				GL::useShader(RM::getIDShader("lightSSAO"));
-				GL::useTexture(ssaoBlurFBO.getTexture(0), 3);
-			}
-			else
-				GL::useShader(RM::getIDShader("light"));
-			GL::useTexture(gbufferFBO.getTexture(0), 0);
-			GL::useTexture(gbufferFBO.getTexture(1), 1);
-			GL::useTexture(gbufferFBO.getTexture(2), 2);
-
-			fboBuffer.draw();
-		}
-		else if (buffer == 2)
-		{
-			GL::useShader(RM::getIDShader("fbo_debug"));
-			GL::useTexture(gbufferFBO.getTexture(1), 0);
-			fboBuffer.draw();
-		}
-		else if (buffer == 3)
-		{
-			GL::useShader(RM::getIDShader("fbo_debug"));
-			GL::useTexture(heatmapTex.getID(), 0);
-			fboBuffer.draw();
-		}
-		else if (buffer == 4)
-		{
-			if (ssaoRender)
-			{
-				GL::useShader(RM::getIDShader("fbo_debug"));
-				GL::useTexture(ssaoBlurFBO.getTexture(0), 0);
-				fboBuffer.draw();
-			}
-		}
-		lightVisibility.unbind();
-		bufferLight.unbind();
-		GL::useShader(RM::getIDShader("crosshair"));
-		crosshair.draw(GL_LINES);
-		ImGui::Render();
-		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-		glfwSwapBuffers(window);
+		draw();
 	}
-	world.saveWorld();
-	ImGui_ImplOpenGL3_Shutdown();
-	ImGui_ImplGlfw_Shutdown();
-	ImGui::DestroyContext();
 }
 
-void Window::message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, GLchar const* message, void const* user_param)
+void Window::draw()
 {
-	std::string const src_str = [source]() {
-		switch (source)
+	uint32_t acquireNextImage;
+	if (device.acquireNextImageKHR(swapchain, UINT64_MAX, semaphoreImageAvailable, nullptr, &acquireNextImage) != vk::Result::eSuccess)
+		throw std::runtime_error("An error in the vkAcquireNextImageKHR function");
+
+	vk::PipelineStageFlags pipelineStageFlags = vk::PipelineStageFlagBits::eTransfer;
+
+	vk::SubmitInfo submitInfo(semaphoreImageAvailable, pipelineStageFlags, cmdBuffers, semaphoreRenderingFinished);
+	if (queue.queue.submit(1, &submitInfo, nullptr) != vk::Result::eSuccess)
+		throw std::runtime_error("An error in the vkQueueSubmit function");
+
+	vk::PresentInfoKHR presentInfo(semaphoreRenderingFinished, swapchain, acquireNextImage);
+	if (queue.queue.presentKHR(&presentInfo) != vk::Result::eSuccess)
+		throw std::runtime_error("An error in the vkQueuePresentKHR function");
+}
+
+VKAPI_ATTR vk::Bool32 VKAPI_CALL Window::vkDebugCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT message_severity,
+	vk::DebugUtilsMessageTypeFlagsEXT message_types, const vk::DebugUtilsMessengerCallbackDataEXT* callback_data, void* user_data)
+{
+	switch (message_severity)
+	{
+	case vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose:
+		Log::verbose("{}", callback_data->pMessage);
+		break;
+	case vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo:
+		Log::info("{}", callback_data->pMessage);
+		break;
+	case vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning:
+		Log::warning("{}", callback_data->pMessage);
+		break;
+	case vk::DebugUtilsMessageSeverityFlagBitsEXT::eError:
+		Log::error("{}", callback_data->pMessage);
+		break;
+	default:
+		break;
+	}
+	return VK_FALSE;
+}
+
+std::vector<uint32_t> Window::loadShader(const std::string& filepath)
+{
+	std::ifstream file(filepath, std::ios::binary | std::ios::in);
+	if (file.is_open())
+	{
+		std::streampos filesize = file.seekg(0, file.end).tellg();
+		file.seekg(file.beg, 0);
+		std::vector<uint32_t> data(filesize>>2);
+		file.read((char*)data.data(), filesize);
+		file.close();
+		return std::move(data);
+	}
+	else
+		return {};
+}
+
+bool Window::isDeviceSuitable(const vk::PhysicalDevice& device)
+{
+	QueueFamilyIndices indices = findQueueFamilies(device);
+	return indices.graphicsFamily.has_value();
+}
+
+QueueFamilyIndices Window::findQueueFamilies(vk::PhysicalDevice physicalDevice)
+{
+	QueueFamilyIndices indices;
+	uint32_t queueFamiliesCount{};
+	physicalDevice.getQueueFamilyProperties(&queueFamiliesCount, nullptr);
+	std::vector<vk::QueueFamilyProperties> queueFamilies(queueFamiliesCount);
+	physicalDevice.getQueueFamilyProperties(&queueFamiliesCount, queueFamilies.data());
+	for (size_t i = 0; i < queueFamiliesCount; i++)
+	{
+		VkBool32 presentationSupported = VK_FALSE;
+		physicalDevice.getSurfaceSupportKHR(i, surface, &presentationSupported);
+		if (presentationSupported && queueFamilies[i].queueFlags && VK_QUEUE_GRAPHICS_BIT)
 		{
-		case GL_DEBUG_SOURCE_API: return "API";
-		case GL_DEBUG_SOURCE_WINDOW_SYSTEM: return "WINDOW SYSTEM";
-		case GL_DEBUG_SOURCE_SHADER_COMPILER: return "SHADER COMPILER";
-		case GL_DEBUG_SOURCE_THIRD_PARTY: return "THIRD PARTY";
-		case GL_DEBUG_SOURCE_APPLICATION: return "APPLICATION";
-		case GL_DEBUG_SOURCE_OTHER: return "OTHER";
+			indices.graphicsFamily = i;
+			break;
 		}
-	}();
+	}
+	return indices;
+}
 
-	std::string const type_str = [type]() {
-		switch (type)
+void Window::findSurfaceFormat()
+{
+	uint32_t surfaceFormatCount{};
+	physicalDevice.getSurfaceFormatsKHR(surface, &surfaceFormatCount, nullptr);
+	std::vector<vk::SurfaceFormatKHR> surfaceFormats(surfaceFormatCount);
+	physicalDevice.getSurfaceFormatsKHR(surface, &surfaceFormatCount, surfaceFormats.data());
+	if (surfaceFormatCount == 1 && surfaceFormats[0].format == vk::Format::eUndefined)
+	{
+		surfaceFormat = {vk::Format::eR8G8B8A8Unorm, vk::ColorSpaceKHR::eSrgbNonlinear};
+		return;
+	}
+	else
+	{
+		for (const vk::SurfaceFormatKHR& format : surfaceFormats)
 		{
-		case GL_DEBUG_TYPE_ERROR: return "ERROR";
-		case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: return "DEPRECATED_BEHAVIOR";
-		case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR: return "UNDEFINED_BEHAVIOR";
-		case GL_DEBUG_TYPE_PORTABILITY: return "PORTABILITY";
-		case GL_DEBUG_TYPE_PERFORMANCE: return "PERFORMANCE";
-		case GL_DEBUG_TYPE_MARKER: return "MARKER";
-		case GL_DEBUG_TYPE_OTHER: return "OTHER";
+			if (format.format == vk::Format::eR8G8B8A8Unorm && format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear)
+			{
+				surfaceFormat = format;
+				return;
+			}
 		}
-	}();
+	}
+	if (surfaceFormat.format == vk::Format::eUndefined)
+		surfaceFormat = surfaceFormats[0];
+}
 
-	std::string const severity_str = [severity]() {
-		switch (severity) {
-		case GL_DEBUG_SEVERITY_NOTIFICATION: return "NOTIFICATION";
-		case GL_DEBUG_SEVERITY_LOW: return "LOW";
-		case GL_DEBUG_SEVERITY_MEDIUM: return "MEDIUM";
-		case GL_DEBUG_SEVERITY_HIGH: return "HIGH";
+void Window::findPresentMode()
+{
+	uint32_t presentModeCount{};
+	physicalDevice.getSurfacePresentModesKHR(surface, &presentModeCount, nullptr);
+	std::vector<vk::PresentModeKHR> presentModes(presentModeCount);
+	physicalDevice.getSurfacePresentModesKHR(surface, &presentModeCount, presentModes.data());
+	for (const vk::PresentModeKHR& present : presentModes)
+		if (present == vk::PresentModeKHR::eMailbox)
+			presentMode = present;
+	if (presentMode == vk::PresentModeKHR::eImmediate)
+		presentMode = vk::PresentModeKHR::eFifo;
+}
+
+void Window::findSwapchainImages()
+{
+	uint32_t swapchainImagesCount{};
+	device.getSwapchainImagesKHR(swapchain, &swapchainImagesCount, nullptr);
+	swapchainImages.resize(swapchainImagesCount);
+	device.getSwapchainImagesKHR(swapchain, &swapchainImagesCount, swapchainImages.data());
+}
+
+bool Window::checkValidationLayerSupport()
+{
+	uint32_t layerCount;
+	vk::enumerateInstanceLayerProperties(&layerCount, nullptr);
+	std::vector<vk::LayerProperties> avaliableLayers(layerCount);
+	vk::enumerateInstanceLayerProperties(&layerCount, avaliableLayers.data());
+	for (const auto& layerName : vulkanLayers)
+	{
+		bool layerFound{};
+		for (const vk::LayerProperties& layerProperties : avaliableLayers)
+		{
+			if (std::string_view(layerName)== std::string_view(layerProperties.layerName))
+			{
+				layerFound = true;
+				break;
+			}
 		}
-	}();
+		if (!layerFound)
+			return false;
+	}
+	return true;
+}
 
-	Logger::log(std::string(src_str) + ", " + std::string(type_str) + ", " + std::string(severity_str) + ", " + std::to_string(id) + ": " + std::string(message));
+void Window::initVulkan()
+{
+	createInstance();
+	createDebug();
+	createSwapchain();
+	createRenderPass();
+	createBuffers();
+	createShaders();
+	createPipeline();
+}
+
+void Window::createDebug()
+{
+	vk::DebugUtilsMessageSeverityFlagsEXT logseverity = vk::DebugUtilsMessageSeverityFlagBitsEXT::eError |
+		vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo;
+	vk::DebugUtilsMessageTypeFlagsEXT logtype = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral |
+		vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation;
+
+	debugCreateInfo = vk::DebugUtilsMessengerCreateInfoEXT({}, logseverity, logtype, (PFN_vkDebugUtilsMessengerCallbackEXT)Window::vkDebugCallback);
+	
+	instance.createDebugUtilsMessengerEXT(&debugCreateInfo, nullptr, &debugUtilsMessengerEXT, vk::DispatchLoaderDynamic{instance, (PFN_vkGetInstanceProcAddr)instance.getProcAddr("vkCreateDebugUtilsMessengerEXT") });
+}
+
+void Window::createInstance()
+{
+	vk::ApplicationInfo applicationInfo(applicationName.c_str(), 1, engineName.c_str(), 1, VK_API_VERSION_1_2);
+	vk::InstanceCreateInfo instanceInfo({}, &applicationInfo, vulkanLayers, instanceExtensions, (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo);
+	instance = vk::createInstance(instanceInfo, nullptr);
+	glfwCreateWindowSurface(instance, window, nullptr, reinterpret_cast<VkSurfaceKHR*>(&surface));
+	uint32_t deviceCount{};
+	instance.enumeratePhysicalDevices(&deviceCount, nullptr);
+	if (deviceCount == 0)
+	{
+		throw std::runtime_error("failed to find GPUs with Vulkan support");
+	}
+	std::vector<vk::PhysicalDevice> physicalDevices(deviceCount);
+	instance.enumeratePhysicalDevices(&deviceCount, physicalDevices.data());
+	for (const auto& pd : physicalDevices)
+	{
+		if (isDeviceSuitable(pd))
+		{
+			this->physicalDevice = pd;
+			queue = findQueueFamilies(pd);
+		}
+	}
+
+	float queuePriority[]{1.f};
+	vk::DeviceQueueCreateInfo deviceQueueCreateInfo({}, queue.graphicsFamily.value(), queuePriority);
+	vk::DeviceCreateInfo deviceCreateInfo({}, deviceQueueCreateInfo, vulkanLayers, deviceExtensions);
+	if (physicalDevice.createDevice(&deviceCreateInfo, nullptr, &device) != vk::Result::eSuccess)
+		throw std::runtime_error("An error in the vkCreateDevice function");
+	device.getQueue(queue.graphicsFamily.value(), 0, &queue.queue);
+}
+
+void Window::createSwapchain()
+{
+	findSurfaceFormat();
+	findPresentMode();
+
+	physicalDevice.getSurfaceCapabilitiesKHR(surface, &surfaceCapabilities);
+
+	vk::SwapchainCreateInfoKHR swapchainCreateInfo(
+		{}, surface, surfaceCapabilities.maxImageCount < 3 ? surfaceCapabilities.maxImageCount : 3, surfaceFormat.format, surfaceFormat.colorSpace,
+		surfaceCapabilities.currentExtent, 1, vk::ImageUsageFlagBits::eColorAttachment, vk::SharingMode::eExclusive, queue.graphicsFamily.value(),
+		surfaceCapabilities.currentTransform, vk::CompositeAlphaFlagBitsKHR::eOpaque, presentMode, VK_TRUE, nullptr);
+	if (device.createSwapchainKHR(&swapchainCreateInfo, nullptr, &swapchain) != vk::Result::eSuccess)
+		throw std::runtime_error("An error in the vkCreateSwapchainKHR function");
+	
+	findSwapchainImages();
+
+	vk::CommandPoolCreateInfo cmdPoolCreateInfo({}, queue.graphicsFamily.value());
+	if (device.createCommandPool(&cmdPoolCreateInfo, nullptr, &queue.cmdPool) != vk::Result::eSuccess)
+		throw std::runtime_error("An error in the vkCreateCommandPool function");
+
+	cmdBuffers.resize(swapchainImages.size());
+
+	vk::CommandBufferAllocateInfo cmdBufferAllocateInfo(queue.cmdPool, vk::CommandBufferLevel::ePrimary, cmdBuffers.size());
+	if (device.allocateCommandBuffers(&cmdBufferAllocateInfo, cmdBuffers.data()) != vk::Result::eSuccess)
+		throw std::runtime_error("An error in the vkAllocateCommandBuffers function");
+
+	vk::CommandBufferBeginInfo cmdBufferBeginInfo(vk::CommandBufferUsageFlagBits::eSimultaneousUse);
+	clearColorValue = std::array<float,4>{ 1.f, 0.5f, 0.f, 0.f };
+	vk::ImageSubresourceRange imageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
+
+	for (size_t i = 0; i < swapchainImages.size(); i++)
+	{
+		vk::ImageMemoryBarrier imageMemoryBarrierPresentToClear(vk::AccessFlagBits::eMemoryRead, vk::AccessFlagBits::eTransferWrite, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, queue.graphicsFamily.value(), queue.graphicsFamily.value(), swapchainImages[i], imageSubresourceRange);
+		vk::ImageMemoryBarrier imageMemoryBarrierClearToPresent(vk::AccessFlagBits::eTransferWrite, vk::AccessFlagBits::eMemoryRead, vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::ePresentSrcKHR, queue.graphicsFamily.value(), queue.graphicsFamily.value(), swapchainImages[i], imageSubresourceRange);
+		cmdBuffers[i].begin(&cmdBufferBeginInfo);
+		cmdBuffers[i].pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer, {}, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrierPresentToClear);
+		cmdBuffers[i].clearColorImage(swapchainImages[i], vk::ImageLayout::eTransferDstOptimal, &clearColorValue, 1,&imageSubresourceRange);
+		cmdBuffers[i].pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer, {}, 0, nullptr, 0, nullptr, 1, & imageMemoryBarrierClearToPresent);
+		cmdBuffers[i].end();
+	}
+
+	vk::SemaphoreCreateInfo semaphoreCreateInfo;
+	if ((device.createSemaphore(&semaphoreCreateInfo, nullptr, &semaphoreImageAvailable) != vk::Result::eSuccess) ||
+	(device.createSemaphore(&semaphoreCreateInfo, nullptr, &semaphoreRenderingFinished) != vk::Result::eSuccess))
+		throw std::runtime_error("An error in the vk::CreateSemaphore function");
+}
+
+void Window::createRenderPass()
+{
+	vk::AttachmentDescription attachmentDescription({}, surfaceFormat.format, vk::SampleCountFlagBits::e1, vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore, vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare, vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal);
+	vk::AttachmentReference attachmentReference(0, vk::ImageLayout::eColorAttachmentOptimal);
+	vk::SubpassDescription subpassDescription({}, vk::PipelineBindPoint::eGraphics, {}, attachmentReference, {}, {}, {});
+	vk::RenderPassCreateInfo renderPassCreateInfo({}, attachmentDescription, subpassDescription, {});
+	renderPass = device.createRenderPass(renderPassCreateInfo);
+	imageViews.resize(swapchainImages.size());
+	framebuffers.resize(swapchainImages.size());
+	for (size_t i = 0; i < swapchainImages.size(); i++)
+	{
+		auto& imageView = imageViews[i];
+		auto& framebuffer = framebuffers[i];
+		vk::ImageSubresourceRange imageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
+		vk::ImageViewCreateInfo imageViewCreateInfo({}, swapchainImages[i], vk::ImageViewType::e2D, surfaceFormat.format, { vk::ComponentSwizzle::eR, vk::ComponentSwizzle::eG, vk::ComponentSwizzle::eB, vk::ComponentSwizzle::eA }, imageSubresourceRange);
+		imageView = device.createImageView(imageViewCreateInfo);
+		vk::FramebufferCreateInfo framebufferCreateInfo({}, renderPass, imageView, surfaceCapabilities.currentExtent.width, surfaceCapabilities.currentExtent.height, 1);
+		framebuffer = device.createFramebuffer(framebufferCreateInfo);
+	}
+}
+
+void Window::createBuffers()
+{
+	std::vector<glm::vec2> position{ {-0.5f, 0.5f}, {0.5f, 0.5f}, {0.f, -0.5f} };
+	vk::BufferCreateInfo bufferCreateInfo({}, position.size() * sizeof(glm::vec2), vk::BufferUsageFlagBits::eVertexBuffer, vk::SharingMode::eExclusive, queue.graphicsFamily.value());
+	buffer = device.createBuffer(bufferCreateInfo);
+	vk::DeviceMemory deviceMemory;
+	vk::MemoryRequirements memoryRequirements;
+	device.getBufferMemoryRequirements(buffer, &memoryRequirements);
+	
+	physicalDeviceMemoryProperties = physicalDevice.getMemoryProperties();
+	vk::MemoryAllocateInfo memoryAllocateInfo(memoryRequirements.size, [&]() {
+		for (size_t i = 0; i < physicalDeviceMemoryProperties.memoryTypeCount; i++)
+		{
+			uint32_t bit = (1u << i);
+			if ((memoryRequirements.memoryTypeBits & bit) != 0)
+			{
+				if ((physicalDeviceMemoryProperties.memoryTypes[i].propertyFlags & vk::MemoryPropertyFlagBits::eHostVisible) == vk::MemoryPropertyFlagBits::eHostVisible)
+				{
+					return i;
+				}
+			}
+		}
+		throw std::runtime_error("failed to get corrent memory type");
+		}());
+	device.allocateMemory(&memoryAllocateInfo, nullptr, &deviceMemory);
+	void* data;
+	if (device.mapMemory(deviceMemory, 0, position.size() * sizeof(glm::vec2), {}, &data) != vk::Result::eSuccess)
+		throw std::runtime_error("failed to allocate device memory");
+	memcpy_s(data, position.size() * sizeof(glm::vec3), position.data(), position.size() * sizeof(glm::vec3));
+	device.unmapMemory(deviceMemory);
+	device.bindBufferMemory(buffer, deviceMemory, 0);
+}
+
+void Window::createShaders()
+{
+	std::vector<uint32_t> vertData(loadShader("Shaders\\default.vert.spv"));
+	vk::ShaderModuleCreateInfo shaderModuleCreateInfoVertex({}, vertData);
+	device.createShaderModule(&shaderModuleCreateInfoVertex, nullptr, &shaderModuleVertex);
+
+	std::vector<uint32_t> fragData(loadShader("Shaders\\default.frag.spv"));
+	vk::ShaderModuleCreateInfo shaderModuleCreateInfoFragment({}, fragData);
+	device.createShaderModule(&shaderModuleCreateInfoFragment, nullptr, &shaderModuleFragment);
+}
+
+void Window::createPipeline()
+{
+	vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo({}, {}, {});
+	pipelineLayout = device.createPipelineLayout(pipelineLayoutCreateInfo);
+	vk::PipelineCache pipelineCache;
+	vk::PipelineCacheCreateInfo pipelineCacheCreateInfo({}, {});
+	device.createPipelineCache(pipelineCacheCreateInfo);
+
+	std::vector<vk::PipelineShaderStageCreateInfo> pipelineShaderStageCreateInfos
+	{
+		vk::PipelineShaderStageCreateInfo({}, vk::ShaderStageFlagBits::eVertex, shaderModuleVertex, "main", nullptr),
+		vk::PipelineShaderStageCreateInfo({}, vk::ShaderStageFlagBits::eFragment, shaderModuleFragment, "main", nullptr)
+	};
+	vk::VertexInputBindingDescription vertexInputBindingDescription(0, sizeof(glm::vec2));
+	vk::VertexInputAttributeDescription vertexInputAttributeDescription(0, 0, vk::Format::eR32G32Sfloat, 0);
+	vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo({}, vertexInputBindingDescription, vertexInputAttributeDescription);
+	
+	vk::PipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo({}, vk::PrimitiveTopology::eTriangleList, VK_FALSE);
+
+	vk::Viewport viewport{
+		0.f, 0.f,
+		(float)surfaceCapabilities.currentExtent.width, (float)surfaceCapabilities.currentExtent.height,
+		0.f, 0.f
+	};
+	vk::Rect2D scissor{
+		{0, 0},
+		{surfaceCapabilities.currentExtent.width, surfaceCapabilities.currentExtent.height}
+	};
+	vk::PipelineViewportStateCreateInfo pipelineViewportStateCreateInfo({}, viewport, scissor);
+	
+	vk::PipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo({}, VK_FALSE, VK_FALSE, vk::PolygonMode::eFill, vk::CullModeFlagBits::eNone, vk::FrontFace::eCounterClockwise, VK_FALSE, 0.f, 0.f, 0.f, 1.f);
+
+	vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo({}, vk::SampleCountFlagBits::e1, VK_FALSE, 0, nullptr, VK_FALSE, VK_FALSE);
+
+	vk::StencilOpState stencilFront(vk::StencilOp::eKeep, vk::StencilOp::eKeep, vk::StencilOp::eKeep, vk::CompareOp::eAlways, 0, 0, 0);
+	vk::StencilOpState stencilBack(vk::StencilOp::eKeep, vk::StencilOp::eKeep, vk::StencilOp::eKeep, vk::CompareOp::eAlways, 0, 0, 0);
+	vk::PipelineDepthStencilStateCreateInfo pipelineDepthStencilStateCreateInfo({}, VK_FALSE, VK_FALSE, vk::CompareOp::eAlways, VK_FALSE, VK_FALSE, stencilFront, stencilBack, 0.f, 0.f);
+
+	vk::PipelineColorBlendAttachmentState pipelineColorBlendAttachmentState(VK_FALSE, vk::BlendFactor::eOne, vk::BlendFactor::eOne, vk::BlendOp::eAdd, vk::BlendFactor::eOne, vk::BlendFactor::eOne, vk::BlendOp::eAdd, vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB);
+	vk::PipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo({}, VK_FALSE, vk::LogicOp::eClear, pipelineColorBlendAttachmentState, {1.f, 1.f, 1.f, 1.f});
+
+	vk::GraphicsPipelineCreateInfo graphicsPipelineCreateInfo({}, pipelineShaderStageCreateInfos, &pipelineVertexInputStateCreateInfo, &pipelineInputAssemblyStateCreateInfo, {}, &pipelineViewportStateCreateInfo, &pipelineRasterizationStateCreateInfo, &pipelineMultisampleStateCreateInfo, &pipelineDepthStencilStateCreateInfo, &pipelineColorBlendStateCreateInfo, {}, pipelineLayout, renderPass, 0, {}, 0);
+	auto p = device.createGraphicsPipelines(pipelineCache, graphicsPipelineCreateInfo);
+	pipeline = p.value[0];
+	if (p.result != vk::Result::eSuccess)
+		throw std::runtime_error("An error in the createGraphicsPipelines function");
+
+	/*std::vector<vk::ClearValue>clr{ clearColorValue };
+
+	for (size_t i = 0; i < swapchainImages.size(); i++)
+	{
+		vk::RenderPassBeginInfo renderPassBeginInfo(renderPass, framebuffers[i], vk::Rect2D({ 0, 0 }, {surfaceCapabilities.currentExtent.width, surfaceCapabilities.currentExtent.height}), clr);
+		cmdBuffers[i].beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
+		cmdBuffers[i].bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+		std::vector<vk::Buffer> vkB{buffer};
+		std::vector<vk::DeviceSize> vkO{ 0 };
+		cmdBuffers[i].bindVertexBuffers(0, vkB, vkO);
+		cmdBuffers[i].draw(3, 1, 0, 0);
+		cmdBuffers[i].endRenderPass();
+	}*/
 }

@@ -2,23 +2,18 @@
 #include <string>
 #include <GLM/ext/vector_int3.hpp>
 #include <GLM/ext/vector_int2.hpp>
-#include <GLEW/glew.h>
 #include "stb_image.hpp"
+#include "GL.hpp"
 
 class Texture
 {
 public:
 	Texture();
-	Texture(GLsizei mipmaps, const glm::ivec3& size, GLenum sizedFormat);
-	Texture(const Texture& other) = delete;
-	Texture& operator=(const Texture& other) = delete;
-	Texture(Texture&& other);
-	Texture& operator=(Texture&& other);
-	~Texture();
-	void editTexture(const glm::ivec3& offset, const glm::ivec2& size, GLenum format, GLenum type, const char* buffer);
-	void editTexture(const std::string& name, GLsizei z = 0);
-	void setRepeat(bool value);
-	void setSmooth(bool value);
+	virtual ~Texture();
+	Texture(const Texture& other);
+	Texture& operator=(const Texture& other);
+	void editTexture(const glm::ivec2& offset, const glm::ivec2& size, GLenum format, GLenum type, const char* buffer);
+	void loadFromFile(const std::string& name);
 	void generateMipmaps() const;
 	GLuint getID() const noexcept;
 	GLenum getTarget() const noexcept;
@@ -27,7 +22,7 @@ public:
 	void bind(GLuint unit) const;
 	void unbind(GLuint unit) const;
 private:
-	glm::ivec3 size;
+	glm::ivec2 size;
 	GLuint id;
 	GLenum target;
 	GLenum sizedFormat;

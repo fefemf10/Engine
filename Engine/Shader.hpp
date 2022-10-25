@@ -4,17 +4,18 @@
 #include <fstream>
 #include <map>
 #include <vector>
-#include <GLEW/glew.h>
 #include <GLFW/glfw3.h>
 #include <GLM/glm.hpp>
+#include "GL.hpp"
 
 class Shader
 {
 public:
 	Shader();
-	Shader(Shader& other);
-	Shader(Shader&& other);
-	Shader(const std::vector<std::string>& shaderFilePaths);
+	Shader(const Shader& other);
+	Shader& operator=(const Shader& other);
+	Shader(const std::initializer_list<std::string> shaderFilePaths);
+	void loadFromFile(const std::initializer_list<std::string> shaderFilePaths);
 	~Shader();
 	void bindAttrib(GLuint index, const std::string& name);
 	void link();

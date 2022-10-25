@@ -1,6 +1,4 @@
 #pragma once
-#include <fstream>
-#include <GLEW/glew.h>
 
 struct Settings
 {
@@ -9,17 +7,9 @@ struct Settings
 	bool fullscreen = false;
 	bool vsync = true;
 };
-
-class GL
+namespace GL
 {
-public:
-	static void useTexture(GLuint id, GLuint unit = 0);
-	static void useShader(GLuint id);
-	static void loadSettings();
-	static void saveSettings();
-	static Settings settings;
-private:
-	static GLuint texture;
-	static GLuint shader;
-};
-
+	extern Settings settings;
+	void loadSettings();
+	void saveSettings();
+}
