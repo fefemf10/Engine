@@ -22,12 +22,15 @@
     <Filter Include="Файлы заголовков\Objects">
       <UniqueIdentifier>{8054e9e6-9a83-4177-aa8a-f74604fffbc0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Исходные файлы\Vulkan">
+      <UniqueIdentifier>{a2b02b75-e6e7-43dc-b189-b7e78db2e2c1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы заголовков\Vulkan">
+      <UniqueIdentifier>{451f9dd9-0dd2-4b70-b445-32c0079a5632}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Main.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
-    <ClCompile Include="Texture.cpp">
+    <ClCompile Include="Main.ixx">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="stb_image.cpp">
@@ -45,9 +48,6 @@
     <ClCompile Include="Event.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="Window.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
     <ClCompile Include="Frustum.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
@@ -55,9 +55,6 @@
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="Hitbox.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
-    <ClCompile Include="Shader.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="RM.cpp">
@@ -81,12 +78,6 @@
     <ClCompile Include="ThreadPool.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="Framebuffer.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
-    <ClCompile Include="GL.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
     <ClCompile Include="Rect.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
@@ -99,13 +90,7 @@
     <ClCompile Include="Transformable.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="Log.ixx">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
     <ClCompile Include="Node.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
-    <ClCompile Include="Mesh.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="Model.cpp">
@@ -129,14 +114,77 @@
     <ClCompile Include="..\IMGUI\imgui_impl_vulkan.cpp">
       <Filter>IMGUI</Filter>
     </ClCompile>
-    <ClCompile Include="color.ixx">
+    <ClCompile Include="GL.ixx">
       <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="Swapchain.cpp">
+      <Filter>Исходные файлы\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Shader.cpp">
+      <Filter>Исходные файлы\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils.cpp">
+      <Filter>Исходные файлы\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Framebuffer.cpp">
+      <Filter>Исходные файлы\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Pipeline.cpp">
+      <Filter>Исходные файлы\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Vulkan.cpp">
+      <Filter>Исходные файлы\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="Log.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="Color.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="Command.cpp">
+      <Filter>Исходные файлы\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Sync.cpp">
+      <Filter>Исходные файлы\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="App.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="ObjectData.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="Mesh.cpp">
+      <Filter>Исходные файлы\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Memory.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="TriangleMesh.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="SquareMesh.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="VertexManager.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="Descriptors.cpp">
+      <Filter>Исходные файлы\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Image.cpp">
+      <Filter>Исходные файлы\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="SingleTimeJob.cpp">
+      <Filter>Исходные файлы\Vulkan</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Texture.hpp">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
     <ClInclude Include="stb_image.hpp">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
@@ -152,9 +200,6 @@
     <ClInclude Include="Event.hpp">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="Window.hpp">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
     <ClInclude Include="Frustum.hpp">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
@@ -162,9 +207,6 @@
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="Hitbox.hpp">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
-    <ClInclude Include="Shader.hpp">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="..\IMGUI\imconfig.h">
@@ -197,12 +239,6 @@
     <ClInclude Include="ThreadPool.hpp">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="Framebuffer.hpp">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
-    <ClInclude Include="GL.hpp">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
     <ClInclude Include="Rect.hpp">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
@@ -216,9 +252,6 @@
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="Node.hpp">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
-    <ClInclude Include="Mesh.hpp">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="Model.hpp">
@@ -238,6 +271,72 @@
     </ClInclude>
     <ClInclude Include="..\IMGUI\imgui_impl_vulkan.h">
       <Filter>IMGUI</Filter>
+    </ClInclude>
+    <ClInclude Include="Swapchain.hpp">
+      <Filter>Файлы заголовков\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Shader.hpp">
+      <Filter>Файлы заголовков\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils.hpp">
+      <Filter>Файлы заголовков\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Framebuffer.hpp">
+      <Filter>Файлы заголовков\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Pipeline.hpp">
+      <Filter>Файлы заголовков\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Vulkan.hpp">
+      <Filter>Файлы заголовков\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine.hpp">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="Log.hpp">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="Color.hpp">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="Command.hpp">
+      <Filter>Файлы заголовков\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Sync.hpp">
+      <Filter>Файлы заголовков\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="App.hpp">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="ObjectData.hpp">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene.hpp">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh.hpp">
+      <Filter>Файлы заголовков\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Memory.hpp">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="TriangleMesh.hpp">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="SquareMesh.hpp">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="VertexManager.hpp">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="Descriptors.hpp">
+      <Filter>Файлы заголовков\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Image.hpp">
+      <Filter>Файлы заголовков\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="SingleTimeJob.hpp">
+      <Filter>Файлы заголовков\Vulkan</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

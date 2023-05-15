@@ -1,15 +1,9 @@
 #pragma once
 #include <vector>
-#include <GLM/vec2.hpp>
-#include <GLM/vec3.hpp>
-#include "Texture.hpp"
-#include "VAO.hpp"
-#include "Material.hpp"
+#include <vulkan/vulkan.hpp>
 
-class Mesh
+namespace VulkanMesh
 {
-public:
-	Material material;
-	void draw() const;
-	VAO vao;
+	vk::VertexInputBindingDescription getPosColorBindingDescription();
+	std::vector<vk::VertexInputAttributeDescription> getPosColorAttributeDescriptions();
 };

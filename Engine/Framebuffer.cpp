@@ -1,87 +1,13 @@
 #include "Framebuffer.hpp"
+#include "Log.hpp"
 
-Framebuffer::Framebuffer()
+void Vulkan::createFramebuffers(FramebufferInput& inputChunk, std::vector<SwapchainFrame>& frames)
 {
-	glCreateFramebuffers(1, &fbo);
-}
-
-Framebuffer::Framebuffer(Framebuffer&& other)
-{
-	glDeleteFramebuffers(1, &fbo);
-	fbo = other.fbo;
-	other.fbo = 0;
-}
-
-Framebuffer::~Framebuffer()
-{
-	glDeleteFramebuffers(1, &fbo);
-}
-
-GLuint Framebuffer::getFBO() const
-{
-	return fbo;
-}
-
-GLuint Framebuffer::getTexture(size_t index) const
-{
-	return textures[index];
-}
-
-GLuint Framebuffer::getDepthTexture() const
-{
-	return depthTexture;
-}
-
-GLenum Framebuffer::checkStatus() const
-{
-	return glCheckNamedFramebufferStatus(fbo, GL_FRAMEBUFFER);
-}
-
-void Framebuffer::bind()
-{
-	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-}
-
-void Framebuffer::unbind()
-{
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
-void Framebuffer::attachTexture(GLenum attachment, GLenum sizedFormat, GLint width, GLint height)
-{
-	GLuint id = 0;
-	glCreateTextures(GL_TEXTURE_2D, 1, &id);
-	textures.push_back(id);
-	glTextureParameteri(id, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTextureParameteri(id, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTextureStorage2D(id, 1, sizedFormat, width, height);
-	glNamedFramebufferTexture(fbo, attachment, id, 0);
-}
-
-void Framebuffer::attachDepth(GLint width, GLint height)
-{
-	glDeleteTextures(1, &depthTexture);
-	glCreateTextures(GL_TEXTURE_2D, 1, &depthTexture);
-	glTextureParameteri(depthTexture, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTextureParameteri(depthTexture, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTextureStorage2D(depthTexture, 1, GL_DEPTH_COMPONENT32F, width, height);
-	glNamedFramebufferTexture(fbo, GL_DEPTH_ATTACHMENT, depthTexture, 0);
-}
-
-void Framebuffer::useTextures(GLuint startUnit)
-{
-	for (size_t i = 0; i < textures.size(); ++i)
+	for (size_t i = 0; i < frames.size(); i++)
 	{
-		glBindTextureUnit(startUnit + i, textures[i]);
-	}
-}
+		std::vector<vk::ImageView> attachments = { frames[i].imageView };
 
-void Framebuffer::useBuffer(GLenum startAttachment)
-{
-	std::vector<GLenum> attachments(textures.size());
-	for (size_t i = 0; i < textures.size(); ++i)
-	{
-		attachments[i] = startAttachment + i;
+		vk::FramebufferCreateInfo framebufferInfo({}, inputChunk.renderPass, attachments, inputChunk.swapchainExtent.width, inputChunk.swapchainExtent.height, 1);
+		Log::debug("{}\n", inputChunk.device.createFramebuffer(&framebufferInfo, nullptr, &frames[i].framebuffer) == vk::Result::eSuccess ? "Successfully created framebuffer" : "Failed to create framebuffer");
 	}
-	glNamedFramebufferDrawBuffers(fbo, textures.size(), attachments.data());
 }
