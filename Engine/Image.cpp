@@ -21,6 +21,7 @@ VulkanImage::Texture::Texture(TextureInputChunk& input)
 	imageInput.device = device;
 	imageInput.width = width;
 	imageInput.height = height;
+	imageInput.format = vk::Format::eR8G8B8A8Unorm;
 	imageInput.tiling = vk::ImageTiling::eOptimal;
 	imageInput.usage = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
 	imageInput.memoryProperties = vk::MemoryPropertyFlagBits::eDeviceLocal;
@@ -95,7 +96,7 @@ void VulkanImage::Texture::populate()
 
 void VulkanImage::Texture::createView()
 {
-	imageView = createImageView(device, image, vk::Format::eR8G8B8A8Unorm);
+	imageView = createImageView(device, image, vk::Format::eR8G8B8A8Unorm, vk::ImageAspectFlagBits::eColor);
 }
 
 void VulkanImage::Texture::createSampler()
@@ -120,7 +121,7 @@ void VulkanImage::Texture::createDescriptorSet()
 vk::Image VulkanImage::createImage(ImageInputChunk input)
 {
 	vk::Image image;
-	vk::ImageCreateInfo imageInfo({}, vk::ImageType::e2D, vk::Format::eR8G8B8A8Unorm, vk::Extent3D(input.width, input.height, 1), 1, 1, vk::SampleCountFlagBits::e1, input.tiling, input.usage, vk::SharingMode::eExclusive);
+	vk::ImageCreateInfo imageInfo({}, vk::ImageType::e2D, input.format, vk::Extent3D(input.width, input.height, 1), 1, 1, vk::SampleCountFlagBits::e1, input.tiling, input.usage, vk::SharingMode::eExclusive);
 	Log::debug("{}\n", input.device.createImage(&imageInfo, nullptr, &image) == vk::Result::eSuccess ? "Successfully created image" : "Failed to create image");
 	return image;
 }
@@ -175,15 +176,31 @@ void VulkanImage::copyBufferToImage(BufferImageCopyJob job)
 	VulkanUtils::endJob(job.cmdBuffer, job.queue);
 }
 
-vk::ImageView VulkanImage::createImageView(vk::Device device, vk::Image image, vk::Format format)
+vk::ImageView VulkanImage::createImageView(vk::Device device, vk::Image image, vk::Format format, vk::ImageAspectFlags aspect)
 {
 	vk::ImageViewCreateInfo createInfo({}, image, vk::ImageViewType::e2D, format, { vk::ComponentSwizzle::eIdentity, vk::ComponentSwizzle::eIdentity, vk::ComponentSwizzle::eIdentity, vk::ComponentSwizzle::eIdentity });
-	createInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+	createInfo.subresourceRange.aspectMask = aspect;
 	createInfo.subresourceRange.baseMipLevel = 0;
 	createInfo.subresourceRange.levelCount = 1;
 	createInfo.subresourceRange.baseArrayLayer = 0;
 	createInfo.subresourceRange.layerCount = 1;
 
 	return device.createImageView(createInfo);
+}
+
+vk::Format VulkanImage::getSupportedFormat(vk::PhysicalDevice physicalDevice, const std::vector<vk::Format&> candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features)
+{
+	for (vk::Format format : candidates)
+	{
+		vk::FormatProperties properties = physicalDevice.getFormatProperties(format);
+		if (tiling == vk::ImageTiling::eLinear && (properties.linearTilingFeatures & features) == features)
+		{
+			return format;
+		}
+		if (tiling == vk::ImageTiling::eOptimal && (properties.linearTilingFeatures & features) == features)
+		{
+			return format;
+		}
+	}
 }
 

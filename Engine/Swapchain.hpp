@@ -1,5 +1,6 @@
 #pragma once
 #include <glm/glm.hpp>
+#include <vector>
 #include <vulkan/vulkan.hpp>
 #include "Memory.hpp"
 
@@ -17,12 +18,24 @@ namespace Vulkan
 		std::vector<vk::SurfaceFormatKHR> formats;
 		std::vector<vk::PresentModeKHR> presentModes;
 	};
-	struct SwapchainFrame
+	class SwapchainFrame
 	{
+	public:
+		vk::PhysicalDevice physicalDevice;
+		vk::Device device;
+
 		vk::Image image;
 		vk::ImageView imageView;
 		vk::Framebuffer framebuffer;
+		vk::Image depthBuffer;
+		vk::DeviceMemory depthBufferMemory;
+		vk::ImageView depthBufferView;
+		vk::Format depthFormat;
+		int width, height;
+
 		vk::CommandBuffer cmdBuffer;
+
+
 		vk::Semaphore imageAvailable, renderFinished;
 		vk::Fence inFlight;
 
@@ -38,8 +51,10 @@ namespace Vulkan
 		vk::DescriptorBufferInfo modelBufferDescriptor;
 		vk::DescriptorSet descriptorSet;
 
-		void createDescriptorResources(vk::PhysicalDevice physicalDevice, vk::Device device);
-		void writeDescriptorSet(vk::Device device);
+		void createDescriptorResources();
+		void createDepthResources();
+		void writeDescriptorSet();
+		void destroy();
 	};
 	struct SwapchainBundle
 	{

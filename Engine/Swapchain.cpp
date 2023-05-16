@@ -70,7 +70,7 @@ Vulkan::SwapchainBundle Vulkan::createSwapchainBundle(vk::PhysicalDevice& physic
 	for (size_t i = 0; i < images.size(); ++i)
 	{
 		bundle.frames[i].image = images[i];
-		bundle.frames[i].imageView = VulkanImage::createImageView(device, images[i], format.format);
+		bundle.frames[i].imageView = VulkanImage::createImageView(device, images[i], format.format, vk::ImageAspectFlagBits::eColor);
 	}
 	bundle.format = format.format;
 	bundle.extent = extent2D;
@@ -109,7 +109,7 @@ Vulkan::SwapchainBundle Vulkan::createSwapchainBundle(vk::PhysicalDevice& physic
 		throw std::runtime_error("An error in the vk::CreateSemaphore function"); */
 }
 
-void Vulkan::SwapchainFrame::createDescriptorResources(vk::PhysicalDevice physicalDevice, vk::Device device)
+void Vulkan::SwapchainFrame::createDescriptorResources()
 {
 	VulkanUtils::BufferInput input;
 	input.physicalDevice = physicalDevice;
@@ -143,9 +143,33 @@ void Vulkan::SwapchainFrame::createDescriptorResources(vk::PhysicalDevice physic
 	modelBufferDescriptor.range = 1024 * sizeof(glm::mat4);
 }
 
-void Vulkan::SwapchainFrame::writeDescriptorSet(vk::Device device)
+void Vulkan::SwapchainFrame::createDepthResources()
+{
+	depthFormat = VulkanImage::getSupportedFormat(physicalDevice, { vk::Format::eD32Sfloat, vk::Format::eD24UnormS8Uint }, vk::ImageTiling::eOptimal, vk::FormatFeatureFlagBits::eDepthStencilAttachment);
+	VulkanImage::ImageInputChunk imageInfo;
+	imageInfo.physicalDevice = physicalDevice;
+	imageInfo.device = device;
+	imageInfo.tiling = vk::ImageTiling::eOptimal;
+	imageInfo.usage = vk::ImageUsageFlagBits::eDepthStencilAttachment;
+	imageInfo.memoryProperties = vk::MemoryPropertyFlagBits::eDeviceLocal;
+	imageInfo.width = width;
+	imageInfo.height = height;
+	imageInfo.format = depthFormat;
+	depthBuffer = VulkanImage::createImage(imageInfo);
+	depthBufferMemory = VulkanImage::createImageMemory(imageInfo, depthBuffer);
+	depthBufferView = VulkanImage::createImageView(device, depthBuffer, depthFormat, vk::ImageAspectFlagBits::eDepth);
+}
+
+void Vulkan::SwapchainFrame::writeDescriptorSet()
 {
 	vk::WriteDescriptorSet writeInfo(descriptorSet, 0, 0, vk::DescriptorType::eUniformBuffer, {}, uniformBufferDescriptor);
 	vk::WriteDescriptorSet writeInfo2(descriptorSet, 1, 0, vk::DescriptorType::eStorageBuffer, {}, modelBufferDescriptor);
 	device.updateDescriptorSets({ writeInfo, writeInfo2 }, nullptr);
+}
+
+void Vulkan::SwapchainFrame::destroy()
+{
+	device.destroyImage(depthBuffer);
+	device.freeMemory(depthBufferMemory);
+	device.destroyImageView(depthBufferView);
 }
