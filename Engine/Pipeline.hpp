@@ -10,7 +10,7 @@ namespace Vulkan
 		std::string vertexFilepath;
 		std::string fragmentFilepath;
 		vk::Extent2D swapchainExtent;
-		vk::Format swapchainFormat;
+		vk::Format swapchainFormat, depthFormat;
 		std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
 	};
 	struct PipelineOutBundle
@@ -21,6 +21,6 @@ namespace Vulkan
 	};
 
 	vk::PipelineLayout createPipelineLayout(vk::Device& device, std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts);
-	vk::RenderPass createRenderPass(vk::Device& device, vk::Format& swapchainFormat);
+	vk::RenderPass createRenderPass(vk::Device& device, vk::Format& swapchainFormat, vk::Format& depthFormat);
 	PipelineOutBundle createPipeline(PipelineInBundle& specification);
 }

@@ -13,12 +13,27 @@ namespace Vulkan
 		return layout;
 	}
 
-	vk::RenderPass createRenderPass(vk::Device& device, vk::Format& swapchainFormat)
+	vk::RenderPass createRenderPass(vk::Device& device, vk::Format& swapchainFormat, vk::Format& depthFormat)
 	{
-		vk::AttachmentDescription attachmentDescription({}, swapchainFormat, vk::SampleCountFlagBits::e1, vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore, vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare, vk::ImageLayout::eUndefined, vk::ImageLayout::ePresentSrcKHR);
+		std::vector<vk::AttachmentDescription> attachments;
+		std::vector<vk::AttachmentReference> references;
+
+		vk::AttachmentDescription attachmentDescription({}, swapchainFormat, vk::SampleCountFlagBits::e1, vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore, vk::AttachmentLoadOp::eDontCare,
+			vk::AttachmentStoreOp::eDontCare, vk::ImageLayout::eUndefined, vk::ImageLayout::ePresentSrcKHR);
 		vk::AttachmentReference attachmentReference(0, vk::ImageLayout::eColorAttachmentOptimal);
-		vk::SubpassDescription subpassDescription({}, vk::PipelineBindPoint::eGraphics, {}, attachmentReference, {}, {}, {});
-		vk::RenderPassCreateInfo renderPassCreateInfo({}, attachmentDescription, subpassDescription, {});
+
+		vk::AttachmentDescription depthDescription({}, depthFormat, vk::SampleCountFlagBits::e1, vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore, vk::AttachmentLoadOp::eDontCare,
+			vk::AttachmentStoreOp::eDontCare, vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilAttachmentOptimal);
+		vk::AttachmentReference depthReference(1, vk::ImageLayout::eDepthStencilAttachmentOptimal);
+
+		attachments.push_back(attachmentDescription);
+		references.push_back(attachmentReference);
+
+		attachments.push_back(depthDescription);
+		references.push_back(depthReference);
+
+		vk::SubpassDescription subpassDescription(vk::SubpassDescriptionFlags(), vk::PipelineBindPoint::eGraphics, {}, &references[0], {}, &references[1], {});
+		vk::RenderPassCreateInfo renderPassCreateInfo({}, attachments, subpassDescription, {});
 		vk::RenderPass renderPass;
 		Log::debug("{}\n", device.createRenderPass(&renderPassCreateInfo, nullptr, &renderPass) == vk::Result::eSuccess ? "RenderPass successfully created" : "Failed creation renderpass");
 		return renderPass;
@@ -66,12 +81,17 @@ namespace Vulkan
 		rasterizationInfo.frontFace = vk::FrontFace::eClockwise;
 		graphicsPipelineCreateInfo.pRasterizationState = &rasterizationInfo;
 
+
 		vk::ShaderModule fragmentShader = createModule(specification.fragmentFilepath, specification.device);
 		vk::PipelineShaderStageCreateInfo fragmentShaderInfo(vk::PipelineShaderStageCreateFlags(), vk::ShaderStageFlagBits::eFragment, fragmentShader, "main");
 		shaderStages.push_back(fragmentShaderInfo);
 
 		graphicsPipelineCreateInfo.stageCount = shaderStages.size();
 		graphicsPipelineCreateInfo.pStages = shaderStages.data();
+
+		//Depth and stencil
+		vk::PipelineDepthStencilStateCreateInfo depthState({}, true, true, vk::CompareOp::eLess, false, false);
+		graphicsPipelineCreateInfo.pDepthStencilState = &depthState;
 
 		vk::PipelineMultisampleStateCreateInfo multisamplingInfo;
 		multisamplingInfo.flags = vk::PipelineMultisampleStateCreateFlags();
@@ -96,7 +116,7 @@ namespace Vulkan
 
 		vk::PipelineLayout layout = createPipelineLayout(specification.device, specification.descriptorSetLayouts);
 		graphicsPipelineCreateInfo.layout = layout;
-		vk::RenderPass renderPass = createRenderPass(specification.device, specification.swapchainFormat);
+		vk::RenderPass renderPass = createRenderPass(specification.device, specification.swapchainFormat, specification.depthFormat);
 		graphicsPipelineCreateInfo.renderPass = renderPass;
 
 		graphicsPipelineCreateInfo.basePipelineHandle = nullptr;

@@ -143,6 +143,7 @@ void Engine::initVulkan()
 	specification.fragmentFilepath = "Shaders\\default.frag.spv";
 	specification.swapchainExtent = swapchainExtent;
 	specification.swapchainFormat = swapchainFormat;
+	specification.depthFormat = swapchainFrames[0].depthFormat;
 	specification.descriptorSetLayouts = { frameDescriptorSetLayout, meshDescriptorSetLayout };
 	Vulkan::PipelineOutBundle output = Vulkan::createPipeline(specification);
 	layout = output.layout;
@@ -166,7 +167,10 @@ void Engine::recordDrawCoommands(vk::CommandBuffer& cmdBuffer, uint32_t imageInd
 	cmdBuffer.begin(beginInfo);
 	//Log::debug("{}\n", cmdBuffer.begin(&beginInfo) == vk::Result::eSuccess ? "Successfully begin recording command buffer" : "Failed to begin recording command buffer");
 	vk::ClearValue clearColor({ 1.0f, 0.5f, 0.25f, 1.0f });
-	vk::RenderPassBeginInfo renderPassInfo(renderPass, swapchainFrames[imageIndex].framebuffer, vk::Rect2D({}, swapchainExtent), clearColor);
+	vk::ClearValue clearDepth;
+	clearDepth.depthStencil = vk::ClearDepthStencilValue({1.f, 0});
+	std::vector<vk::ClearValue> clearColors({ clearColor, clearDepth });
+	vk::RenderPassBeginInfo renderPassInfo(renderPass, swapchainFrames[imageIndex].framebuffer, vk::Rect2D({}, swapchainExtent), clearColors);
 	cmdBuffer.beginRenderPass(&renderPassInfo, vk::SubpassContents::eInline);
 	cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
 	cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, layout, 0, swapchainFrames[imageIndex].descriptorSet, nullptr);
@@ -196,6 +200,15 @@ void Engine::createSwapchain()
 	swapchainExtent = bundle.extent;
 	swapchainFrames = bundle.frames;
 	maxFramesInFlight = swapchainFrames.size();
+
+	for (Vulkan::SwapchainFrame& frame : swapchainFrames)
+	{
+		frame.physicalDevice = physicalDevice;
+		frame.device = device;
+		frame.width = swapchainExtent.width;
+		frame.height = swapchainExtent.height;
+		frame.createDepthResources();
+	}
 }
 
 void Engine::recreateSwapchain()
@@ -218,21 +231,9 @@ void Engine::recreateSwapchain()
 
 void Engine::destroySwapchain()
 {
-	for (Vulkan::SwapchainFrame frame : swapchainFrames)
+	for (Vulkan::SwapchainFrame& frame : swapchainFrames)
 	{
-		device.destroyImageView(frame.imageView);
-		device.destroyFramebuffer(frame.framebuffer);
-		device.destroyFence(frame.inFlight);
-		device.destroySemaphore(frame.imageAvailable);
-		device.destroySemaphore(frame.renderFinished);
-
-		device.unmapMemory(frame.cameraDataBuffer.bufferMemory);
-		device.freeMemory(frame.cameraDataBuffer.bufferMemory);
-		device.destroyBuffer(frame.cameraDataBuffer.buffer);
-
-		device.unmapMemory(frame.modelBuffer.bufferMemory);
-		device.freeMemory(frame.modelBuffer.bufferMemory);
-		device.destroyBuffer(frame.modelBuffer.buffer);
+		frame.destroy();
 	}
 	device.destroySwapchainKHR(swapchain);
 	device.destroyDescriptorPool(frameDescriptorPool);
@@ -262,7 +263,7 @@ void Engine::createSync()
 		frame.imageAvailable = Vulkan::createSemaphore(device);
 		frame.renderFinished = Vulkan::createSemaphore(device);
 
-		frame.createDescriptorResources(physicalDevice, device);
+		frame.createDescriptorResources();
 		frame.descriptorSet = Vulkan::allocateDescriptorSet(device, frameDescriptorPool, frameDescriptorSetLayout);
 	}
 }
@@ -380,5 +381,5 @@ void Engine::createFrame(uint32_t imageIndex, Scene* scene)
 	for (const glm::vec3& pos : scene->starPos)
 		frame.modelTransform[i++] = glm::translate(glm::mat4(1.f), pos);
 	memcpy(frame.modelBufferWriteLocation, frame.modelTransform.data(), i * sizeof(glm::mat4));
-	frame.writeDescriptorSet(device);
+	frame.writeDescriptorSet();
 }

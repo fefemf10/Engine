@@ -121,7 +121,7 @@ void VulkanImage::Texture::createDescriptorSet()
 vk::Image VulkanImage::createImage(ImageInputChunk input)
 {
 	vk::Image image;
-	vk::ImageCreateInfo imageInfo({}, vk::ImageType::e2D, input.format, vk::Extent3D(input.width, input.height, 1), 1, 1, vk::SampleCountFlagBits::e1, input.tiling, input.usage, vk::SharingMode::eExclusive);
+	vk::ImageCreateInfo imageInfo({}, vk::ImageType::e2D, input.format, vk::Extent3D(input.width, input.height, 1), 1, 1, vk::SampleCountFlagBits::e1, input.tiling, input.usage, vk::SharingMode::eExclusive, {}, vk::ImageLayout::eUndefined);
 	Log::debug("{}\n", input.device.createImage(&imageInfo, nullptr, &image) == vk::Result::eSuccess ? "Successfully created image" : "Failed to create image");
 	return image;
 }
@@ -188,7 +188,7 @@ vk::ImageView VulkanImage::createImageView(vk::Device device, vk::Image image, v
 	return device.createImageView(createInfo);
 }
 
-vk::Format VulkanImage::getSupportedFormat(vk::PhysicalDevice physicalDevice, const std::vector<vk::Format&> candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features)
+vk::Format VulkanImage::getSupportedFormat(vk::PhysicalDevice physicalDevice, std::vector<vk::Format> candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features)
 {
 	for (vk::Format format : candidates)
 	{
@@ -197,10 +197,11 @@ vk::Format VulkanImage::getSupportedFormat(vk::PhysicalDevice physicalDevice, co
 		{
 			return format;
 		}
-		if (tiling == vk::ImageTiling::eOptimal && (properties.linearTilingFeatures & features) == features)
+		if (tiling == vk::ImageTiling::eOptimal && (properties.optimalTilingFeatures & features) == features)
 		{
 			return format;
 		}
 	}
+	std::runtime_error("Unable to find suitable format");
 }
 

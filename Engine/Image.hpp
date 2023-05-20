@@ -80,5 +80,5 @@ namespace VulkanImage
 	void transitionImageLayout(ImageLayoutTransitionJob job);
 	void copyBufferToImage(BufferImageCopyJob job);
 	vk::ImageView createImageView(vk::Device device, vk::Image image, vk::Format format, vk::ImageAspectFlags aspect);
-	vk::Format getSupportedFormat(vk::PhysicalDevice physicalDevice, const std::vector<vk::Format&> candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features);
+	vk::Format getSupportedFormat(vk::PhysicalDevice physicalDevice, std::vector<vk::Format> candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features);
 };

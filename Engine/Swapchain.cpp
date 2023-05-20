@@ -76,37 +76,6 @@ Vulkan::SwapchainBundle Vulkan::createSwapchainBundle(vk::PhysicalDevice& physic
 	bundle.extent = extent2D;
 
 	return bundle;
-	/*findSwapchainImages();
-
-	vk::CommandPoolCreateInfo cmdPoolCreateInfo({}, graphicsQueue);
-	if (device.createCommandPool(&cmdPoolCreateInfo, nullptr, &queue.cmdPool) != vk::Result::eSuccess)
-		throw std::runtime_error("An error in the vkCreateCommandPool function");
-
-	cmdBuffers.resize(swapchainImages.size());
-
-	vk::CommandBufferAllocateInfo cmdBufferAllocateInfo(queue.cmdPool, vk::CommandBufferLevel::ePrimary, cmdBuffers.size());
-	if (device.allocateCommandBuffers(&cmdBufferAllocateInfo, cmdBuffers.data()) != vk::Result::eSuccess)
-		throw std::runtime_error("An error in the vkAllocateCommandBuffers function");
-
-	vk::CommandBufferBeginInfo cmdBufferBeginInfo(vk::CommandBufferUsageFlagBits::eSimultaneousUse);
-	clearColorValue = std::array<float, 4>{ 1.f, 0.5f, 0.f, 0.f };
-	vk::ImageSubresourceRange imageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
-
-	for (size_t i = 0; i < swapchainImages.size(); i++)
-	{
-		vk::ImageMemoryBarrier imageMemoryBarrierPresentToClear(vk::AccessFlagBits::eMemoryRead, vk::AccessFlagBits::eTransferWrite, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, queue.graphicsFamily.value(), queue.graphicsFamily.value(), swapchainImages[i], imageSubresourceRange);
-		vk::ImageMemoryBarrier imageMemoryBarrierClearToPresent(vk::AccessFlagBits::eTransferWrite, vk::AccessFlagBits::eMemoryRead, vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::ePresentSrcKHR, queue.graphicsFamily.value(), queue.graphicsFamily.value(), swapchainImages[i], imageSubresourceRange);
-		cmdBuffers[i].begin(&cmdBufferBeginInfo);
-		cmdBuffers[i].pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer, {}, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrierPresentToClear);
-		cmdBuffers[i].clearColorImage(swapchainImages[i], vk::ImageLayout::eTransferDstOptimal, &clearColorValue, 1, &imageSubresourceRange);
-		cmdBuffers[i].pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer, {}, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrierClearToPresent);
-		cmdBuffers[i].end();
-	}
-
-	vk::SemaphoreCreateInfo semaphoreCreateInfo;
-	if ((device.createSemaphore(&semaphoreCreateInfo, nullptr, &semaphoreImageAvailable) != vk::Result::eSuccess) ||
-		(device.createSemaphore(&semaphoreCreateInfo, nullptr, &semaphoreRenderingFinished) != vk::Result::eSuccess))
-		throw std::runtime_error("An error in the vk::CreateSemaphore function"); */
 }
 
 void Vulkan::SwapchainFrame::createDescriptorResources()
@@ -172,4 +141,18 @@ void Vulkan::SwapchainFrame::destroy()
 	device.destroyImage(depthBuffer);
 	device.freeMemory(depthBufferMemory);
 	device.destroyImageView(depthBufferView);
+
+	device.destroyImageView(imageView);
+	device.destroyFramebuffer(framebuffer);
+	device.destroyFence(inFlight);
+	device.destroySemaphore(imageAvailable);
+	device.destroySemaphore(renderFinished);
+
+	device.unmapMemory(cameraDataBuffer.bufferMemory);
+	device.freeMemory(cameraDataBuffer.bufferMemory);
+	device.destroyBuffer(cameraDataBuffer.buffer);
+
+	device.unmapMemory(modelBuffer.bufferMemory);
+	device.freeMemory(modelBuffer.bufferMemory);
+	device.destroyBuffer(modelBuffer.buffer);
 }
