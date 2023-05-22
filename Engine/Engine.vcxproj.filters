@@ -183,6 +183,12 @@
     <ClCompile Include="SingleTimeJob.cpp">
       <Filter>Исходные файлы\Vulkan</Filter>
     </ClCompile>
+    <ClCompile Include="Helper.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="ObjMesh.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stb_image.hpp">
@@ -337,6 +343,12 @@
     </ClInclude>
     <ClInclude Include="SingleTimeJob.hpp">
       <Filter>Файлы заголовков\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Helper.hpp">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="ObjMesh.hpp">
+      <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -10,6 +10,7 @@
 #include "Scene.hpp"
 #include "VertexManager.hpp"
 #include "Image.hpp"
+#include "ObjMesh.hpp"
 
 class Engine
 {

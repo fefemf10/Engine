@@ -4,9 +4,9 @@
 #include "Memory.hpp"
 enum class MeshType
 {
-	TRIANGLE,
-	SQUARE,
-	STAR
+	GROUND,
+	GIRL,
+	SKULL
 };
 struct FinalizationChunk
 {

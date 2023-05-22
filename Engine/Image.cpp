@@ -3,7 +3,6 @@
 #include "Descriptors.hpp"
 #include "SingleTimeJob.hpp"
 #include "Log.hpp"
-#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.hpp"
 
 VulkanImage::Texture::Texture(TextureInputChunk& input)

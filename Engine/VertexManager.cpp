@@ -11,12 +11,13 @@ VertexManager::~VertexManager()
 	device.freeMemory(vertexBuffer.bufferMemory);
 	device.destroyBuffer(indexBuffer.buffer);
 	device.freeMemory(indexBuffer.bufferMemory);
+	vertexLump.clear();
 }
 
 void VertexManager::consume(MeshType type, const std::vector<float>& vertexData, const std::vector<uint32_t>& indicesData)
 {
 	int indexCount = indicesData.size();
-	int vertexCount = vertexData.size() / 7;
+	int vertexCount = vertexData.size() / 11;
 	int lastIndex = indexLump.size();
 	firstIndices.insert({ type, lastIndex });
 	indexCounts.insert({ type, indexCount });
@@ -72,4 +73,5 @@ void VertexManager::finalize(FinalizationChunk& finalizationChunk)
 
 	device.destroyBuffer(stagingBuffer.buffer);
 	device.freeMemory(stagingBuffer.bufferMemory);
+	vertexLump.clear();
 }

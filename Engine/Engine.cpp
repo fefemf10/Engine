@@ -154,7 +154,7 @@ void Engine::initVulkan()
 
 	cmdPool = Vulkan::createCmdPool(physicalDevice, device, surface);
 
-	Vulkan::cmdBufferInputChunk cmdBufferInputChunk {device, cmdPool, swapchainFrames };
+	Vulkan::cmdBufferInputChunk cmdBufferInputChunk{ device, cmdPool, swapchainFrames };
 	mainCmdBuffer = Vulkan::createCmdBuffer(cmdBufferInputChunk);
 	Vulkan::createFrameCmdBuffer(cmdBufferInputChunk);
 	createSync();
@@ -168,17 +168,38 @@ void Engine::recordDrawCoommands(vk::CommandBuffer& cmdBuffer, uint32_t imageInd
 	//Log::debug("{}\n", cmdBuffer.begin(&beginInfo) == vk::Result::eSuccess ? "Successfully begin recording command buffer" : "Failed to begin recording command buffer");
 	vk::ClearValue clearColor({ 1.0f, 0.5f, 0.25f, 1.0f });
 	vk::ClearValue clearDepth;
-	clearDepth.depthStencil = vk::ClearDepthStencilValue({1.f, 0});
+	clearDepth.depthStencil = vk::ClearDepthStencilValue({ 1.f, 0 });
 	std::vector<vk::ClearValue> clearColors({ clearColor, clearDepth });
+	//VkImageMemoryBarrier b{
+	//		.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+	//		.pNext = NULL,
+	//		.srcAccessMask = 0,
+	//		.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+	//		.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+	//		.newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+	//		.srcQueueFamilyIndex = 0,
+	//		.dstQueueFamilyIndex = 0,
+	//		.image = swapchainFrames[imageIndex].depthBuffer,
+	//		.subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT, .levelCount = 1, .layerCount = 1 },
+	//};
+	//vkCmdPipelineBarrier (
+ //   cmdBuffer,
+ //   VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+ //   VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+ //   0,
+ //   0, NULL,
+ //   0, NULL,
+ //   1, &b );
 	vk::RenderPassBeginInfo renderPassInfo(renderPass, swapchainFrames[imageIndex].framebuffer, vk::Rect2D({}, swapchainExtent), clearColors);
 	cmdBuffer.beginRenderPass(&renderPassInfo, vk::SubpassContents::eInline);
 	cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
 	cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, layout, 0, swapchainFrames[imageIndex].descriptorSet, nullptr);
 	createScene(cmdBuffer);
 	uint32_t startInstance{};
-	recordDrawCmdObjects(cmdBuffer, MeshType::TRIANGLE, startInstance, scene->trianglePos.size());
-	recordDrawCmdObjects(cmdBuffer, MeshType::SQUARE, startInstance, scene->squarePos.size());
-	recordDrawCmdObjects(cmdBuffer, MeshType::STAR, startInstance, scene->starPos.size());
+	for (std::pair<MeshType, std::vector<glm::vec3>> pair : scene->positions)
+	{
+		recordDrawCmdObjects(cmdBuffer, pair.first, startInstance, pair.second.size());
+	}
 	cmdBuffer.endRenderPass();
 	cmdBuffer.end();
 }
@@ -225,7 +246,7 @@ void Engine::recreateSwapchain()
 	createSwapchain();
 	createFramebuffer();
 	createSync();
-	Vulkan::cmdBufferInputChunk cmdBufferInputChunk {device, cmdPool, swapchainFrames };
+	Vulkan::cmdBufferInputChunk cmdBufferInputChunk{ device, cmdPool, swapchainFrames };
 	Vulkan::createFrameCmdBuffer(cmdBufferInputChunk);
 }
 
@@ -272,49 +293,18 @@ void Engine::createAssets()
 {
 	meshes = new VertexManager();
 
-	std::vector<float> vertices = {
-		 0.0f, -0.1f, 0.0f, 1.0f, 0.0f, 0.5f, 0.0f,
-		 0.1f, 0.1f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,
-		-0.1f, 0.1f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f
+	std::unordered_map<MeshType, std::vector<const char*>> modelFilenames =
+	{
+		{MeshType::GROUND, {"Models\\ground.obj", "Models\\ground.mtl"}},
+		{MeshType::GIRL, {"Models\\girl.obj", "Models\\girl.mtl"}},
+		{MeshType::SKULL, {"Models\\skull.obj", "Models\\skull.mtl"}},
 	};
-	std::vector<uint32_t> indices = { 0, 1, 2 };
-	MeshType type = MeshType::TRIANGLE;
-	meshes->consume(type, vertices, indices);
-
-	vertices = {
-		-0.1f,  0.1f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-		-0.1f, -0.1f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-		 0.1f, -0.1f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
-		 0.1f,  0.1f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f
-	};
-	indices = {0, 1, 2, 2, 3, 0};
-	type = MeshType::SQUARE;
-	meshes->consume(type, vertices, indices);
-
-	vertices = {
-		 -0.1f, -0.05f, 1.0f, 1.0f, 1.0f, 0.0f, 0.25f,
-		-0.04f, -0.05f, 1.0f, 1.0f, 1.0f, 0.3f, 0.25f,
-		-0.06f,   0.0f, 1.0f, 1.0f, 1.0f, 0.2f,  0.5f,
-		  0.0f,  -0.1f, 1.0f, 1.0f, 1.0f, 0.5f,  0.0f,
-		 0.04f, -0.05f, 1.0f, 1.0f, 1.0f, 0.7f, 0.25f,
-		  0.1f, -0.05f, 1.0f, 1.0f, 1.0f, 1.0f, 0.25f,
-		 0.06f,   0.0f, 1.0f, 1.0f, 1.0f, 0.8f,  0.5f,
-		 0.08f,   0.1f, 1.0f, 1.0f, 1.0f, 0.9f,  1.0f,
-		  0.0f,  0.02f, 1.0f, 1.0f, 1.0f, 0.5f,  0.6f,
-		-0.08f,   0.1f, 1.0f, 1.0f, 1.0f, 0.1f,  1.0f 
-	};
-	indices = {
-			0, 1, 2,
-			1, 3, 4,
-			2, 1, 4,
-			4, 5, 6,
-			2, 4, 6,
-			6, 7, 8,
-			2, 6, 8,
-			2, 8, 9
-	};
-	type = MeshType::STAR;
-	meshes->consume(type, vertices, indices);
+	for (std::pair<MeshType, std::vector<const char*>> pair : modelFilenames)
+	{
+		ObjMesh model(pair.second[0], pair.second[1], glm::mat4(1.f));
+		meshes->consume(pair.first, model.vertices, model.indices);
+	}
+	
 	FinalizationChunk finalizationChunk;
 	finalizationChunk.physicalDevice = physicalDevice;
 	finalizationChunk.device = device;
@@ -322,10 +312,10 @@ void Engine::createAssets()
 	finalizationChunk.cmdBuffer = mainCmdBuffer;
 	meshes->finalize(finalizationChunk);
 
-	const std::unordered_map<MeshType, const char*> filenames {
-		{MeshType::TRIANGLE, "Models\\1\\1.jpg"},
-		{MeshType::SQUARE, "Models\\1\\2.jpg"},
-		{MeshType::STAR, "Models\\1\\3.jpg"}
+	const std::unordered_map<MeshType, const char*> filenames{
+		{MeshType::GROUND, "Models\\ground.jpg"},
+		{MeshType::GIRL, "Models\\none.png"},
+		{MeshType::SKULL, "Models\\skull.png"}
 	};
 
 	Vulkan::DescriptorSetLayoutData bindings;
@@ -360,12 +350,12 @@ void Engine::createScene(vk::CommandBuffer cmdBuffer)
 void Engine::createFrame(uint32_t imageIndex, Scene* scene)
 {
 	Vulkan::SwapchainFrame& frame = swapchainFrames[imageIndex];
-	glm::vec3 eye {1.f, 0.f, -1.f};
-	glm::vec3 center {0.f, 0.f, 0.f};
-	glm::vec3 up {0.f, 0.f, -1.f};
+	glm::vec3 eye{ 0.f, 0.f, 1.f };
+	glm::vec3 center{ 1.f, 0.f, 1.f };
+	glm::vec3 up{ 0.f, 0.f, 1.f };
 	glm::mat4 view = glm::lookAt(eye, center, up);
 
-	glm::mat4 projection = glm::perspective(glm::radians(45.f), float(swapchainExtent.width) / swapchainExtent.height, 0.1f, 10.f);
+	glm::mat4 projection = glm::perspective(glm::radians(45.f), float(swapchainExtent.width) / swapchainExtent.height, 0.1f, 100.f);
 	projection[1][1] *= -1;
 
 	frame.cameraData.view = view;
@@ -374,12 +364,13 @@ void Engine::createFrame(uint32_t imageIndex, Scene* scene)
 	memcpy(frame.cameraDataWriteLocation, &frame.cameraData, sizeof(Vulkan::MVP));
 
 	size_t i{};
-	for (const glm::vec3& pos : scene->trianglePos)
-		frame.modelTransform[i++] = glm::translate(glm::mat4(1.f), pos);
-	for (const glm::vec3& pos : scene->squarePos)
-		frame.modelTransform[i++] = glm::translate(glm::mat4(1.f), pos);
-	for (const glm::vec3& pos : scene->starPos)
-		frame.modelTransform[i++] = glm::translate(glm::mat4(1.f), pos);
+	for (std::pair<MeshType, std::vector<glm::vec3>> pair : scene->positions)
+	{
+		for (const glm::vec3& position : pair.second)
+		{
+			frame.modelTransform[i++] = glm::translate(glm::mat4(1.f), position);
+		}
+	}
 	memcpy(frame.modelBufferWriteLocation, frame.modelTransform.data(), i * sizeof(glm::mat4));
 	frame.writeDescriptorSet();
 }

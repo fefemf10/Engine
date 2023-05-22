@@ -3,7 +3,7 @@
 SquareMesh::SquareMesh(vk::PhysicalDevice& physicalDevice, vk::Device& device)
 {
 	std::vector<float> vertices = {
-		-0.05, -0.05f, 0.0f, 1.0f, 0.0f,
+		-0.05f, -0.05f, 0.0f, 1.0f, 0.0f,
 		0.05f, 0.05f, 0.0f, 1.0f, 0.0f,
 		-0.05f, 0.05f, 0.0f, 1.0f, 0.0f,
 		-0.05f, 0.05f, 0.0f, 1.0f, 0.0f,

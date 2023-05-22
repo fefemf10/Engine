@@ -15,9 +15,6 @@ namespace Vulkan
 
 	vk::RenderPass createRenderPass(vk::Device& device, vk::Format& swapchainFormat, vk::Format& depthFormat)
 	{
-		std::vector<vk::AttachmentDescription> attachments;
-		std::vector<vk::AttachmentReference> references;
-
 		vk::AttachmentDescription attachmentDescription({}, swapchainFormat, vk::SampleCountFlagBits::e1, vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore, vk::AttachmentLoadOp::eDontCare,
 			vk::AttachmentStoreOp::eDontCare, vk::ImageLayout::eUndefined, vk::ImageLayout::ePresentSrcKHR);
 		vk::AttachmentReference attachmentReference(0, vk::ImageLayout::eColorAttachmentOptimal);
@@ -26,13 +23,13 @@ namespace Vulkan
 			vk::AttachmentStoreOp::eDontCare, vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilAttachmentOptimal);
 		vk::AttachmentReference depthReference(1, vk::ImageLayout::eDepthStencilAttachmentOptimal);
 
-		attachments.push_back(attachmentDescription);
-		references.push_back(attachmentReference);
+		const std::vector<vk::AttachmentDescription> attachments{ attachmentDescription, depthDescription };
+		const std::vector<vk::AttachmentReference> references{ attachmentReference, depthReference };
 
-		attachments.push_back(depthDescription);
-		references.push_back(depthReference);
-
-		vk::SubpassDescription subpassDescription(vk::SubpassDescriptionFlags(), vk::PipelineBindPoint::eGraphics, {}, &references[0], {}, &references[1], {});
+		vk::SubpassDescription subpassDescription(vk::SubpassDescriptionFlags(), vk::PipelineBindPoint::eGraphics, {}, references[0], {}, &references[1], {});
+		//vk::SubpassDependency subpassColorDependency(VK_SUBPASS_EXTERNAL, 0, vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eColorAttachmentOutput, {}, vk::AccessFlagBits::eColorAttachmentWrite);
+		//vk::SubpassDependency subpassDepthDependency(VK_SUBPASS_EXTERNAL, 0, vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests, vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests, {}, vk::AccessFlagBits::eDepthStencilAttachmentWrite);
+		//const std::vector<vk::SubpassDependency> dependecies{ subpassColorDependency, subpassDepthDependency };
 		vk::RenderPassCreateInfo renderPassCreateInfo({}, attachments, subpassDescription, {});
 		vk::RenderPass renderPass;
 		Log::debug("{}\n", device.createRenderPass(&renderPassCreateInfo, nullptr, &renderPass) == vk::Result::eSuccess ? "RenderPass successfully created" : "Failed creation renderpass");
@@ -65,8 +62,8 @@ namespace Vulkan
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 		vk::Rect2D scissor;
-		scissor.offset.x = 0.0f;
-		scissor.offset.y = 0.0f;
+		scissor.offset.x = 0;
+		scissor.offset.y = 0;
 		scissor.extent = specification.swapchainExtent;
 		vk::PipelineViewportStateCreateInfo viewportState(vk::PipelineViewportStateCreateFlags(), viewport, scissor);
 		graphicsPipelineCreateInfo.pViewportState = &viewportState;
@@ -78,7 +75,7 @@ namespace Vulkan
 		rasterizationInfo.polygonMode = vk::PolygonMode::eFill;
 		rasterizationInfo.lineWidth = 1.0f;
 		rasterizationInfo.cullMode = vk::CullModeFlagBits::eBack;
-		rasterizationInfo.frontFace = vk::FrontFace::eClockwise;
+		rasterizationInfo.frontFace = vk::FrontFace::eCounterClockwise;
 		graphicsPipelineCreateInfo.pRasterizationState = &rasterizationInfo;
 
 
