@@ -24,7 +24,7 @@ std::vector<vk::VertexInputAttributeDescription> VulkanMesh::getPosColorAttribut
 	attributes[2].location = 2;
 	attributes[2].format = vk::Format::eR32G32Sfloat;
 	attributes[2].offset = 6 * sizeof(float);
-	//UV
+	//Normal
 	attributes[3].binding = 0;
 	attributes[3].location = 3;
 	attributes[3].format = vk::Format::eR32G32B32Sfloat;
