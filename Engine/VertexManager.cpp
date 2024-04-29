@@ -22,8 +22,7 @@ void VertexManager::consume(MeshType type, const std::vector<float>& vertexData,
 	firstIndices.insert({ type, lastIndex });
 	indexCounts.insert({ type, indexCount });
 
-	for (float attribute : vertexData)
-		vertexLump.push_back(attribute);
+	vertexLump.append_range(vertexData);
 	for (uint32_t index : indicesData)
 		indexLump.push_back(index + indexOffset);
 	indexOffset += vertexCount;
